@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/kotban/backend/internal/model"
-	"github.com/kotban/backend/internal/repository"
+	"github.com/tstech/backend/internal/model"
+	"github.com/tstech/backend/internal/repository"
 	"gorm.io/gorm"
 )
 

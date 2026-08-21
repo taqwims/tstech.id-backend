@@ -1,8 +1,8 @@
 package service
 
 import (
-	"github.com/kotban/backend/internal/model"
-	"github.com/kotban/backend/internal/repository"
+	"github.com/tstech/backend/internal/model"
+	"github.com/tstech/backend/internal/repository"
 )
 
 type ContentService struct {

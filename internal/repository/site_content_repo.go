@@ -3,7 +3,7 @@ package repository
 import (
 	"time"
 
-	"github.com/kotban/backend/internal/model"
+	"github.com/tstech/backend/internal/model"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )

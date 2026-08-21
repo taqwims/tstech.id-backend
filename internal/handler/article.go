@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/kotban/backend/internal/service"
+	"github.com/tstech/backend/internal/service"
 	"github.com/labstack/echo/v4"
 )
 

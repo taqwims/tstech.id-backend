@@ -7,10 +7,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/kotban/backend/internal/model"
-	"github.com/kotban/backend/internal/repository"
-	"github.com/kotban/backend/internal/service"
-	"github.com/kotban/backend/pkg/response"
+	"github.com/tstech/backend/internal/model"
+	"github.com/tstech/backend/internal/repository"
+	"github.com/tstech/backend/internal/service"
+	"github.com/tstech/backend/pkg/response"
 	"github.com/labstack/echo/v4"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
@@ -369,7 +369,7 @@ func (h *AdminHandler) ConvertOrderToProject(c echo.Context) error {
 	user, err := h.userRepo.FindByEmail(order.CustomerEmail)
 	if err != nil || user == nil {
 		// Auto create user for client
-		hashed, _ := bcrypt.GenerateFromPassword([]byte("kotban123"), bcrypt.DefaultCost)
+		hashed, _ := bcrypt.GenerateFromPassword([]byte("tstech123"), bcrypt.DefaultCost)
 		newUser := &model.User{
 			Email:       order.CustomerEmail,
 			Password:    string(hashed),

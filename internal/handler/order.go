@@ -4,10 +4,10 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/kotban/backend/internal/model"
-	"github.com/kotban/backend/internal/repository"
-	"github.com/kotban/backend/internal/service"
-	"github.com/kotban/backend/pkg/response"
+	"github.com/tstech/backend/internal/model"
+	"github.com/tstech/backend/internal/repository"
+	"github.com/tstech/backend/internal/service"
+	"github.com/tstech/backend/pkg/response"
 	"github.com/labstack/echo/v4"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -88,7 +88,7 @@ func (h *OrderHandler) Create(c echo.Context) error {
 
 	// Auto check & create client user account if not exists
 	isNewAccount := false
-	defaultPassword := "kotban123"
+	defaultPassword := "tstech123"
 	existingUser, err := h.userRepo.FindByEmail(req.CustomerEmail)
 	if err != nil || existingUser == nil {
 		hashed, err := bcrypt.GenerateFromPassword([]byte(defaultPassword), bcrypt.DefaultCost)

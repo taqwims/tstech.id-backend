@@ -4,8 +4,8 @@ import (
 	"log"
 	"time"
 
-	"github.com/kotban/backend/internal/config"
-	"github.com/kotban/backend/internal/model"
+	"github.com/tstech/backend/internal/config"
+	"github.com/tstech/backend/internal/model"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 )
@@ -65,7 +65,7 @@ func seedAdmin(db *gorm.DB, cfg *config.Config) {
 			Name:        cfg.AdminName,
 			Role:        "admin",
 			Phone:       cfg.WhatsAppNumber,
-			CompanyName: "Kotban.com",
+			CompanyName: "TsTech",
 			IsActive:    true,
 		}
 
@@ -105,13 +105,13 @@ func seedDefaultContent(db *gorm.DB) {
 		},
 		{
 			Key:   "about_company",
-			Value: "Kotban.com adalah software house modern yang berfokus pada pengembangan solusi digital berkualitas tinggi, scalable, dan tepat waktu untuk berbagai kebutuhan bisnis.",
+			Value: "TsTech adalah software house modern yang berfokus pada pengembangan solusi digital berkualitas tinggi, scalable, dan tepat waktu untuk berbagai kebutuhan bisnis.",
 			Type:  "text",
 			Group: "about",
 		},
 		{
 			Key:   "contact_email",
-			Value: "halo@kotban.com",
+			Value: "halo@tstech.com",
 			Type:  "text",
 			Group: "contact",
 		},
@@ -147,7 +147,7 @@ func seedDefaultContent(db *gorm.DB) {
 		},
 		{
 			Key:   "site_faqs",
-			Value: `[{"category":"Umum","items":[{"question":"Apa itu Kotban.com?","answer":"Kotban.com adalah software house profesional yang melayani jasa pembuatan website, aplikasi mobile (Android/iOS), sistem informasi custom (ERP/CRM/POS), UI/UX design, serta pemeliharaan software untuk berbagai skala bisnis."},{"question":"Layanan apa saja yang tersedia?","answer":"Kami menyediakan pembuatan Website Company Profile, Toko Online (E-Commerce), Aplikasi Mobile (Android/iOS), Sistem Informasi Custom (ERP, CRM, HRIS), Maintenance & Support, serta Jasa Desain UI/UX."}]},{"category":"Proses & Waktu Pengerjaan","items":[{"question":"Berapa lama waktu pengerjaan website/aplikasi?","answer":"Estimasi waktu pengerjaan bervariasi tergantung skala proyek. Paket Basic membutuhkan 7-14 hari kerja, Professional 14-30 hari kerja, dan Enterprise 30-60 hari kerja."},{"question":"Bagaimana proses revisi?","answer":"Revisi dilakukan pada tahap testing & QA. Jumlah revisi menyesuaikan paket yang dipilih (Basic: 1x, Professional: 3x, Enterprise: Unlimited sesuai ruang lingkup brief awal)."}]},{"category":"Pembayaran","items":[{"question":"Berapa besar DP yang dibutuhkan?","answer":"DP (Down Payment) standar adalah sebesar 50% dari total nilai proyek saat pesanan dibuat, dan pelunasan 50% sisanya dilakukan setelah testing selesai dan produk siap dilaunching."},{"question":"Metode pembayaran apa saja yang diterima?","answer":"Kami menerima pembayaran via iPaymu Payment Gateway yang mendukung Bank Transfer (Virtual Account), QRIS, E-Wallet, serta Kartu Kredit."}]},{"category":"Garansi & Hak Milik","items":[{"question":"Apakah klien mendapatkan source code dan hak milik penuh?","answer":"Ya, 100% hak cipta, source code, dan akses server akan diserahkan sepenuhnya kepada klien setelah pelunasan."},{"question":"Apakah ada garansi setelah selesai?","answer":"Kami memberikan garansi perbaikan bug dan error gratis selama 30 hingga 180 hari sesuai paket yang dipilih."}]}]`,
+			Value: `[{"category":"Umum","items":[{"question":"Apa itu TsTech?","answer":"TsTech adalah software house profesional yang melayani jasa pembuatan website, aplikasi mobile (Android/iOS), sistem informasi custom (ERP/CRM/POS), UI/UX design, serta pemeliharaan software untuk berbagai skala bisnis."},{"question":"Layanan apa saja yang tersedia?","answer":"Kami menyediakan pembuatan Website Company Profile, Toko Online (E-Commerce), Aplikasi Mobile (Android/iOS), Sistem Informasi Custom (ERP, CRM, HRIS), Maintenance & Support, serta Jasa Desain UI/UX."}]},{"category":"Proses & Waktu Pengerjaan","items":[{"question":"Berapa lama waktu pengerjaan website/aplikasi?","answer":"Estimasi waktu pengerjaan bervariasi tergantung skala proyek. Paket Basic membutuhkan 7-14 hari kerja, Professional 14-30 hari kerja, dan Enterprise 30-60 hari kerja."},{"question":"Bagaimana proses revisi?","answer":"Revisi dilakukan pada tahap testing & QA. Jumlah revisi menyesuaikan paket yang dipilih (Basic: 1x, Professional: 3x, Enterprise: Unlimited sesuai ruang lingkup brief awal)."}]},{"category":"Pembayaran","items":[{"question":"Berapa besar DP yang dibutuhkan?","answer":"DP (Down Payment) standar adalah sebesar 50% dari total nilai proyek saat pesanan dibuat, dan pelunasan 50% sisanya dilakukan setelah testing selesai dan produk siap dilaunching."},{"question":"Metode pembayaran apa saja yang diterima?","answer":"Kami menerima pembayaran via iPaymu Payment Gateway yang mendukung Bank Transfer (Virtual Account), QRIS, E-Wallet, serta Kartu Kredit."}]},{"category":"Garansi & Hak Milik","items":[{"question":"Apakah klien mendapatkan source code dan hak milik penuh?","answer":"Ya, 100% hak cipta, source code, dan akses server akan diserahkan sepenuhnya kepada klien setelah pelunasan."},{"question":"Apakah ada garansi setelah selesai?","answer":"Kami memberikan garansi perbaikan bug dan error gratis selama 30 hingga 180 hari sesuai paket yang dipilih."}]}]`,
 			Type:  "json",
 			Group: "faq",
 		},
@@ -230,7 +230,7 @@ func seedPortfoliosAndTestimonials(db *gorm.DB) {
 				ClientName:  "Ahmad Ridwan",
 				CompanyName: "PT Maju Bersama",
 				Rating:      5,
-				Content:     "Kotban.com membantu kami membuat website e-commerce yang sangat profesional. Penjualan online kami meningkat 150% setelah launch!",
+				Content:     "TsTech membantu kami membuat website e-commerce yang sangat profesional. Penjualan online kami meningkat 150% setelah launch!",
 				IsActive:    true,
 				SortOrder:   1,
 			},
@@ -238,7 +238,7 @@ func seedPortfoliosAndTestimonials(db *gorm.DB) {
 				ClientName:  "Sari Dewi",
 				CompanyName: "Klinik Sehat",
 				Rating:      5,
-				Content:     "Sistem informasi klinik yang dibuat sangat memudahkan operasional kami. Tim Kotban sangat responsif dan profesional.",
+				Content:     "Sistem informasi klinik yang dibuat sangat memudahkan operasional kami. Tim TsTech sangat responsif dan profesional.",
 				IsActive:    true,
 				SortOrder:   2,
 			},
@@ -275,7 +275,7 @@ func seedDefaultPaymentSettings(db *gorm.DB, cfg *config.Config) {
 		{Key: "ipaymu_api_key", Value: cfg.IpaymuAPIKey},
 		{Key: "ipaymu_is_production", Value: "false"},
 		{Key: "manual_transfer_enabled", Value: "true"},
-		{Key: "manual_bank_accounts", Value: `[{"bank_name":"BCA","account_number":"8735098231","account_holder":"PT KOTBAN SOLUSI TEKNOLOGI","icon":"bca"},{"bank_name":"Bank Mandiri","account_number":"1370019827364","account_holder":"PT KOTBAN SOLUSI TEKNOLOGI","icon":"mandiri"},{"bank_name":"Bank Syariah Indonesia (BSI)","account_number":"7219082341","account_holder":"PT KOTBAN SOLUSI TEKNOLOGI","icon":"bsi"}]`},
+		{Key: "manual_bank_accounts", Value: `[{"bank_name":"BCA","account_number":"8735098231","account_holder":"PT TSTECH SOLUSI TEKNOLOGI","icon":"bca"},{"bank_name":"Bank Mandiri","account_number":"1370019827364","account_holder":"PT TSTECH SOLUSI TEKNOLOGI","icon":"mandiri"},{"bank_name":"Bank Syariah Indonesia (BSI)","account_number":"7219082341","account_holder":"PT TSTECH SOLUSI TEKNOLOGI","icon":"bsi"}]`},
 		{Key: "manual_instructions", Value: "Silakan lakukan transfer tepat sesuai total nominal yang tertera ke salah satu rekening resmi di atas. Setelah transfer berhasil, harap unggah bukti transfer melalui halaman ini atau kirimkan konfirmasi via WhatsApp kami agar pesanan Anda dapat langsung diproses."},
 		{Key: "manual_whatsapp", Value: cfg.WhatsAppNumber},
 		{Key: "default_gateway", Value: "customer_choice"},
@@ -319,10 +319,10 @@ func seedArticles(db *gorm.DB) {
 			IsTrending:  true,
 			ViewsCount:  1420,
 			ReadingTime: 7,
-			MetaTitle:   "Panduan Lengkap SEO Website 2026: Strategi Ampuh Peringkat #1 | Kotban.com",
+			MetaTitle:   "Panduan Lengkap SEO Website 2026: Strategi Ampuh Peringkat #1 | TsTech",
 			MetaDescription: "Panduan praktis kaidah SEO website modern di tahun 2026. Optimasi Core Web Vitals, Structured Data, arsitektur teknis, dan strategi konten berkualitas tinggi.",
 			MetaKeywords: "panduan seo 2026, optimasi website google, seo software house, cara ranking 1 google, core web vitals indonesia",
-			CanonicalURL: "https://kotban.com/blog/panduan-lengkap-seo-website-2026",
+			CanonicalURL: "https://tstech.com/blog/panduan-lengkap-seo-website-2026",
 			PublishedAt: &twoDaysAgo,
 			Content: `## Mengapa Kaidah SEO 2026 Berbeda dari Tahun-Tahun Sebelumnya?
 
@@ -374,9 +374,9 @@ Tulis konten yang menjawab secara langsung pertanyaan pengunjung. Buat struktur 
 
 ## Kesimpulan
 
-Membangun website dengan kaidah SEO terbaik sejak tahap awal pengembangan adalah investasi jangka panjang paling menguntungkan bagi bisnis Anda. Di **Kotban.com**, seluruh website dan aplikasi yang kami kembangkan dirancang dengan arsitektur SEO-first berkinerja tinggi.
+Membangun website dengan kaidah SEO terbaik sejak tahap awal pengembangan adalah investasi jangka panjang paling menguntungkan bagi bisnis Anda. Di **TsTech**, seluruh website dan aplikasi yang kami kembangkan dirancang dengan arsitektur SEO-first berkinerja tinggi.
 
-> **Ingin memiliki website bisnis yang cepat, elegan, dan langsung siap menduduki halaman 1 Google?** [Konsultasikan kebutuhan proyek Anda bersama tim ahli Kotban.com sekarang juga!](/konsultasi)`,
+> **Ingin memiliki website bisnis yang cepat, elegan, dan langsung siap menduduki halaman 1 Google?** [Konsultasikan kebutuhan proyek Anda bersama tim ahli TsTech sekarang juga!](/konsultasi)`,
 		},
 		{
 			Title:       "Mengapa Bisnis Berkembang Butuh Website Custom Dibandingkan Template Biasa?",
@@ -384,7 +384,7 @@ Membangun website dengan kaidah SEO terbaik sejak tahap awal pengembangan adalah
 			Excerpt:     "Ketahui perbedaan mendasar antara website custom code dengan website berbasis template instan, serta dampaknya terhadap skalabilitas, keamanan, dan reputasi merek bisnis Anda.",
 			Category:    "Web Development",
 			Tags:        "Web Development, Custom Website, Bisnis Digital, Software House, Next.js",
-			AuthorName:  "Tim Engineering Kotban",
+			AuthorName:  "Tim Engineering TsTech",
 			AuthorAvatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80",
 			AuthorRole:  "Software Architecture Team",
 			CoverImage:  "https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=1200&auto=format&fit=crop&q=80",
@@ -393,10 +393,10 @@ Membangun website dengan kaidah SEO terbaik sejak tahap awal pengembangan adalah
 			IsTrending:  false,
 			ViewsCount:  980,
 			ReadingTime: 5,
-			MetaTitle:   "Website Custom vs Template untuk Bisnis Berkembang | Kotban.com",
+			MetaTitle:   "Website Custom vs Template untuk Bisnis Berkembang | TsTech",
 			MetaDescription: "Ketahui keunggulan website custom buatan software house profesional dibandingkan template instan untuk pertumbuhan bisnis jangka panjang.",
 			MetaKeywords: "jasa pembuatan website custom, website custom vs template, software house indonesia, web developer profesional",
-			CanonicalURL: "https://kotban.com/blog/mengapa-bisnis-butuh-website-custom-bukan-template",
+			CanonicalURL: "https://tstech.com/blog/mengapa-bisnis-butuh-website-custom-bukan-template",
 			PublishedAt: &threeDaysAgo,
 			Content: `## Fenomena Template Instan vs Kebutuhan Nyata Bisnis
 
@@ -439,9 +439,9 @@ Website custom memberikan kebebasan 100% untuk menghubungkan API apa pun tanpa b
 
 ---
 
-## Siap Naik Kelas Bersama Kotban.com?
+## Siap Naik Kelas Bersama TsTech?
 
-Tim **Kotban.com** siap merancang dan membangun website custom berstandar industri dengan teknologi modern paling mutakhir. Hubungi tim kami untuk sesi konsultasi gratis sekarang juga!`,
+Tim **TsTech** siap merancang dan membangun website custom berstandar industri dengan teknologi modern paling mutakhir. Hubungi tim kami untuk sesi konsultasi gratis sekarang juga!`,
 		},
 		{
 			Title:       "Next.js vs React: Mana Pilihan Terbaik untuk Proyek Website Bisnis Anda?",
@@ -458,10 +458,10 @@ Tim **Kotban.com** siap merancang dan membangun website custom berstandar indust
 			IsTrending:  true,
 			ViewsCount:  1240,
 			ReadingTime: 6,
-			MetaTitle:   "Next.js vs React: Mana yang Tepat untuk Proyek Bisnis? | Kotban.com",
+			MetaTitle:   "Next.js vs React: Mana yang Tepat untuk Proyek Bisnis? | TsTech",
 			MetaDescription: "Panduan memilih antara Next.js dan React untuk website bisnis Anda. Perbandingan SSR vs CSR, kapabilitas SEO, dan kecepatan muat halaman.",
 			MetaKeywords: "next.js vs react, perbedaan nextjs dan react, jasa nextjs indonesia, frontend developer software house",
-			CanonicalURL: "https://kotban.com/blog/nextjs-vs-react-mana-terbaik-untuk-proyek-web",
+			CanonicalURL: "https://tstech.com/blog/nextjs-vs-react-mana-terbaik-untuk-proyek-web",
 			PublishedAt: &fiveDaysAgo,
 			Content: `## Pengantar: Ekosistem Modern Frontend Web
 
@@ -496,7 +496,7 @@ Pilihlah Next.js jika proyek Anda membutuhkan:
 2. Kecepatan muat halaman instan di semua jenis perangkat mobile.
 3. Halaman publik seperti Company Profile, Portal Berita, Katalog E-Commerce, dan Landing Page penawaran jasa.
 
-Di **Kotban.com**, kami menggunakan Next.js 16 App Router dengan React 19 untuk menghasilkan performa maksimal bagi klien kami.`,
+Di **TsTech**, kami menggunakan Next.js 16 App Router dengan React 19 untuk menghasilkan performa maksimal bagi klien kami.`,
 		},
 		{
 			Title:       "Tren Pengembangan Aplikasi Mobile 2026: Peluang Emas Transformasi Digital",
@@ -504,7 +504,7 @@ Di **Kotban.com**, kami menggunakan Next.js 16 App Router dengan React 19 untuk 
 			Excerpt:     "Ketahui tren aplikasi mobile terkini tahun 2026 mulai dari Cross-Platform Flutter/React Native, integrasi AI On-Device, hingga arsitektur micro-apps untuk efisiensi operasional.",
 			Category:    "Mobile App",
 			Tags:        "Mobile App, Flutter, React Native, Android, iOS, Transformasi Digital",
-			AuthorName:  "Tim Engineering Kotban",
+			AuthorName:  "Tim Engineering TsTech",
 			AuthorAvatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80",
 			AuthorRole:  "Mobile Development Lead",
 			CoverImage:  "https://images.unsplash.com/photo-1512941937669-90a1b58e7e9c?w=1200&auto=format&fit=crop&q=80",
@@ -513,10 +513,10 @@ Di **Kotban.com**, kami menggunakan Next.js 16 App Router dengan React 19 untuk 
 			IsTrending:  true,
 			ViewsCount:  870,
 			ReadingTime: 5,
-			MetaTitle:   "Tren Pengembangan Aplikasi Mobile 2026 untuk Bisnis | Kotban.com",
+			MetaTitle:   "Tren Pengembangan Aplikasi Mobile 2026 untuk Bisnis | TsTech",
 			MetaDescription: "Ketahui tren pengembangan aplikasi mobile Android & iOS 2026 untuk memperluas jangkauan pasar dan meningkatkan retensi pelanggan bisnis Anda.",
 			MetaKeywords: "jasa pembuatan aplikasi mobile, aplikasi android ios bisnis, developer flutter indonesia, software house mobile",
-			CanonicalURL: "https://kotban.com/blog/tren-aplikasi-mobile-2026-dan-peluang-bisnis",
+			CanonicalURL: "https://tstech.com/blog/tren-aplikasi-mobile-2026-dan-peluang-bisnis",
 			PublishedAt: &oneWeekAgo,
 			Content: `## Mengapa Aplikasi Mobile Semakin Krusial di 2026?
 
@@ -544,7 +544,7 @@ Aplikasi mobile kini mampu memberikan rekomendasi produk dan notifikasi cerdas b
 
 ## Bangun Aplikasi Mobile Bisnis Anda Bersama Kami
 
-Kotban.com berpengalaman membangun aplikasi mobile kelas enterprise untuk berbagai industri: retail POS, reservasi klinik, logistik armada, hingga platform komunitas edukasi. Hubungi kami untuk konsultasi teknis!`,
+TsTech berpengalaman membangun aplikasi mobile kelas enterprise untuk berbagai industri: retail POS, reservasi klinik, logistik armada, hingga platform komunitas edukasi. Hubungi kami untuk konsultasi teknis!`,
 		},
 		{
 			Title:       "Manfaat Nyata Sistem Informasi & ERP Kustom untuk Meningkatkan Efisiensi Bisnis",
@@ -552,7 +552,7 @@ Kotban.com berpengalaman membangun aplikasi mobile kelas enterprise untuk berbag
 			Excerpt:     "Pelajari bagaimana implementasi sistem informasi manajemen dan ERP custom dapat memangkas biaya operasional, mencegah kebocoran inventori, dan mempercepat pengambilan keputusan.",
 			Category:    "Sistem Informasi",
 			Tags:        "Sistem Informasi, ERP Custom, Manajemen Bisnis, Otomasi Bisnis",
-			AuthorName:  "Tim Redaksi Kotban",
+			AuthorName:  "Tim Redaksi TsTech",
 			AuthorAvatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
 			AuthorRole:  "Business Systems Analyst",
 			CoverImage:  "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=1200&auto=format&fit=crop&q=80",
@@ -561,10 +561,10 @@ Kotban.com berpengalaman membangun aplikasi mobile kelas enterprise untuk berbag
 			IsTrending:  false,
 			ViewsCount:  650,
 			ReadingTime: 6,
-			MetaTitle:   "Manfaat Sistem Informasi & ERP Kustom untuk Efisiensi Bisnis | Kotban.com",
-			MetaDescription: "Tingkatkan efisiensi dan kontrol operasional bisnis Anda dengan sistem informasi dan ERP custom buatan Kotban.com.",
+			MetaTitle:   "Manfaat Sistem Informasi & ERP Kustom untuk Efisiensi Bisnis | TsTech",
+			MetaDescription: "Tingkatkan efisiensi dan kontrol operasional bisnis Anda dengan sistem informasi dan ERP custom buatan TsTech.",
 			MetaKeywords: "jasa pembuatan sistem informasi, software erp custom, aplikasi manajemen gudang, software house sistem informasi",
-			CanonicalURL: "https://kotban.com/blog/manfaat-sistem-informasi-erp-untuk-umkm",
+			CanonicalURL: "https://tstech.com/blog/manfaat-sistem-informasi-erp-untuk-umkm",
 			PublishedAt: &oneWeekAgo,
 			Content: `## Tantangan Operasional Bisnis yang Berkembang
 
@@ -583,7 +583,7 @@ Ketika transaksi harian bisnis Anda bertambah dari puluhan menjadi ratusan atau 
 
 ---
 
-## Solusi Software Terintegrasi dari Kotban.com
+## Solusi Software Terintegrasi dari TsTech
 
 Kami merancang sistem ERP dan Software Manajemen yang menyesuaikan SOP bisnis Anda, bukan memaksa bisnis Anda menyesuaikan software yang kaku. [Jadwalkan sesi demo sistem sekarang](/konsultasi).`,
 		},

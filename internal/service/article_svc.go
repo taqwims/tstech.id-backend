@@ -8,8 +8,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/kotban/backend/internal/model"
-	"github.com/kotban/backend/internal/repository"
+	"github.com/tstech/backend/internal/model"
+	"github.com/tstech/backend/internal/repository"
 )
 
 type ArticleService struct {
@@ -116,7 +116,7 @@ func (s *ArticleService) Create(input CreateArticleInput) (*model.Article, error
 
 	authorName := strings.TrimSpace(input.AuthorName)
 	if authorName == "" {
-		authorName = "Tim Redaksi Kotban"
+		authorName = "Tim Redaksi TsTech"
 	}
 
 	authorRole := strings.TrimSpace(input.AuthorRole)

@@ -6,7 +6,7 @@ import (
 	"net/smtp"
 	"strings"
 
-	"github.com/kotban/backend/internal/config"
+	"github.com/tstech/backend/internal/config"
 )
 
 type EmailService struct {
@@ -19,7 +19,7 @@ func NewEmailService(cfg *config.Config) *EmailService {
 
 // SendOrderConfirmation sends order confirmation email with optional login credentials
 func (s *EmailService) SendOrderConfirmation(to, customerName, orderNumber string, amount int64, defaultPassword string, isNewAccount bool) error {
-	subject := fmt.Sprintf("Konfirmasi Pesanan #%s - Kotban.com", orderNumber)
+	subject := fmt.Sprintf("Konfirmasi Pesanan #%s - TsTech", orderNumber)
 
 	accountInfoHTML := ""
 	if isNewAccount && defaultPassword != "" {
@@ -53,7 +53,7 @@ func (s *EmailService) SendOrderConfirmation(to, customerName, orderNumber strin
 	body := fmt.Sprintf(`
 		<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #334155; line-height: 1.6;">
 			<h2 style="color: #0f172a;">Halo, %s!</h2>
-			<p>Terima kasih telah mempercayakan proyek software Anda kepada <strong>Kotban.com</strong>. Pesanan Anda telah berhasil tercatat di sistem kami.</p>
+			<p>Terima kasih telah mempercayakan proyek software Anda kepada <strong>TsTech</strong>. Pesanan Anda telah berhasil tercatat di sistem kami.</p>
 			
 			<div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; margin: 16px 0;">
 				<h4 style="margin-top: 0; color: #0f172a;">Detail Pesanan:</h4>
@@ -67,7 +67,7 @@ func (s *EmailService) SendOrderConfirmation(to, customerName, orderNumber strin
 
 			<p>Tim engineering kami akan segera menghubungi Anda melalui WhatsApp untuk memulai tahap briefing requirement.</p>
 			<br>
-			<p style="color: #64748b; font-size: 14px;">Salam hangat,<br><strong>Tim Kotban.com</strong><br><a href="%s" style="color: #6366f1;">%s</a></p>
+			<p style="color: #64748b; font-size: 14px;">Salam hangat,<br><strong>Tim TsTech</strong><br><a href="%s" style="color: #6366f1;">%s</a></p>
 		</div>
 	`, customerName, orderNumber, amount, accountInfoHTML, s.cfg.AppURL, s.cfg.AppURL)
 
@@ -76,13 +76,13 @@ func (s *EmailService) SendOrderConfirmation(to, customerName, orderNumber strin
 
 // SendConsultationConfirmation sends confirmation for consultation request
 func (s *EmailService) SendConsultationConfirmation(to, name string) error {
-	subject := "Permintaan Konsultasi Diterima - Kotban.com"
+	subject := "Permintaan Konsultasi Diterima - TsTech"
 	body := fmt.Sprintf(`
 		<h2>Halo, %s!</h2>
 		<p>Permintaan konsultasi Anda telah kami terima.</p>
 		<p>Tim kami akan segera menghubungi Anda untuk menjadwalkan sesi konsultasi.</p>
 		<br>
-		<p>Salam,<br>Tim Kotban.com</p>
+		<p>Salam,<br>Tim TsTech</p>
 	`, name)
 
 	return s.sendEmail(to, subject, body)
@@ -90,7 +90,7 @@ func (s *EmailService) SendConsultationConfirmation(to, name string) error {
 
 // SendPaymentReceipt sends payment receipt confirmation to customer
 func (s *EmailService) SendPaymentReceipt(to, customerName, invoiceNumber, paymentMethod string, amount int64, paymentType, projectTitle string) error {
-	subject := fmt.Sprintf("Bukti Pembayaran Berhasil #%s - Kotban.com", invoiceNumber)
+	subject := fmt.Sprintf("Bukti Pembayaran Berhasil #%s - TsTech", invoiceNumber)
 	typeDesc := "Pembayaran DP (Uang Muka)"
 	if paymentType == "pelunasan" {
 		typeDesc = "Pelunasan Tagihan Proyek"
@@ -101,7 +101,7 @@ func (s *EmailService) SendPaymentReceipt(to, customerName, invoiceNumber, payme
 	body := fmt.Sprintf(`
 		<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #334155; line-height: 1.6;">
 			<div style="background: linear-gradient(135deg, #4f46e5 0%%, #06b6d4 100%%); padding: 24px; border-radius: 12px 12px 0 0; text-align: center; color: white;">
-				<h1 style="margin: 0; font-size: 24px;">Kotban.com</h1>
+				<h1 style="margin: 0; font-size: 24px;">TsTech</h1>
 				<p style="margin: 6px 0 0; opacity: 0.9; font-size: 14px;">Pembayaran Anda Telah Berhasil Diterima ✓</p>
 			</div>
 			<div style="background: #ffffff; border: 1px solid #e2e8f0; border-top: none; border-radius: 0 0 12px 12px; padding: 24px;">
@@ -138,7 +138,7 @@ func (s *EmailService) SendPaymentReceipt(to, customerName, invoiceNumber, payme
 					<a href="%s/dashboard" style="background: #6366f1; color: white; padding: 12px 28px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">Buka Dashboard Klien &rarr;</a>
 				</div>
 				
-				<p style="color: #64748b; font-size: 13px; margin-bottom: 0;">Jika ada pertanyaan, silakan hubungi tim kami via WhatsApp di nomor resmi Kotban.com.</p>
+				<p style="color: #64748b; font-size: 13px; margin-bottom: 0;">Jika ada pertanyaan, silakan hubungi tim kami via WhatsApp di nomor resmi TsTech.</p>
 			</div>
 		</div>
 	`, customerName, amount, invoiceNumber, invoiceNumber, typeDesc, paymentMethod, projectTitle, amount, s.cfg.AppURL)

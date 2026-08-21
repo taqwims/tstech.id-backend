@@ -1,7 +1,7 @@
 package repository
 
 import (
-	"github.com/kotban/backend/internal/model"
+	"github.com/tstech/backend/internal/model"
 	"gorm.io/gorm"
 )
 

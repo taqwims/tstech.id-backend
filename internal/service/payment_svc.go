@@ -16,9 +16,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/kotban/backend/internal/config"
-	"github.com/kotban/backend/internal/model"
-	"github.com/kotban/backend/internal/repository"
+	"github.com/tstech/backend/internal/config"
+	"github.com/tstech/backend/internal/model"
+	"github.com/tstech/backend/internal/repository"
 	"gorm.io/gorm"
 )
 
@@ -111,9 +111,9 @@ func (s *PaymentService) GetAdminSettings() (*model.PaymentSettingsConfig, error
 
 	if len(bankAccounts) == 0 {
 		bankAccounts = []model.BankAccount{
-			{BankName: "BCA", AccountNumber: "8735098231", AccountHolder: "PT KOTBAN SOLUSI TEKNOLOGI", Icon: "bca"},
-			{BankName: "Bank Mandiri", AccountNumber: "1370019827364", AccountHolder: "PT KOTBAN SOLUSI TEKNOLOGI", Icon: "mandiri"},
-			{BankName: "Bank Syariah Indonesia (BSI)", AccountNumber: "7219082341", AccountHolder: "PT KOTBAN SOLUSI TEKNOLOGI", Icon: "bsi"},
+			{BankName: "BCA", AccountNumber: "8735098231", AccountHolder: "PT TSTECH SOLUSI TEKNOLOGI", Icon: "bca"},
+			{BankName: "Bank Mandiri", AccountNumber: "1370019827364", AccountHolder: "PT TSTECH SOLUSI TEKNOLOGI", Icon: "mandiri"},
+			{BankName: "Bank Syariah Indonesia (BSI)", AccountNumber: "7219082341", AccountHolder: "PT TSTECH SOLUSI TEKNOLOGI", Icon: "bsi"},
 		}
 	}
 
@@ -228,8 +228,8 @@ func (s *PaymentService) GetPublicPaymentMethods() (map[string]interface{}, erro
 		methods = append(methods, model.PublicPaymentMethod{
 			ID:           "manual",
 			Name:         "Transfer Bank Manual",
-			Description:  "Transfer langsung ke rekening resmi PT Kotban Solusi Teknologi (BCA / Mandiri / BSI)",
-			Badge:        "Verifikasi Tim Kotban",
+			Description:  "Transfer langsung ke rekening resmi PT TsTech Solusi Teknologi (BCA / Mandiri / BSI)",
+			Badge:        "Verifikasi Tim TsTech",
 			Type:         "manual",
 			IsEnabled:    true,
 			BankAccounts: cfg.ManualBankAccounts,
@@ -380,7 +380,7 @@ func (s *PaymentService) callPakasirAPI(paymentID uint, req *CreatePaymentReques
 		slug = s.cfg.PakasirProjectSlug
 	}
 	if slug == "" {
-		slug = "kotban"
+		slug = "tstech"
 	}
 
 	refID := fmt.Sprintf("KTB-%d", paymentID)
@@ -432,12 +432,12 @@ func (s *PaymentService) callMayarAPI(paymentID uint, req *CreatePaymentRequest,
 	// Sanitize buyer fields for Mayar requirements
 	buyerName := strings.TrimSpace(req.BuyerName)
 	if buyerName == "" {
-		buyerName = "Pelanggan Kotban"
+		buyerName = "Pelanggan TsTech"
 	}
 
 	buyerEmail := strings.TrimSpace(req.BuyerEmail)
 	if buyerEmail == "" || !strings.Contains(buyerEmail, "@") {
-		buyerEmail = "client@kotban.com"
+		buyerEmail = "client@tstech.com"
 	}
 
 	// Mayar strictly requires 'mobile' to have length >= 10
@@ -453,7 +453,7 @@ func (s *PaymentService) callMayarAPI(paymentID uint, req *CreatePaymentRequest,
 
 	productDesc := req.ProductName
 	if strings.TrimSpace(productDesc) == "" {
-		productDesc = fmt.Sprintf("Pembayaran Tagihan Kotban #%d", paymentID)
+		productDesc = fmt.Sprintf("Pembayaran Tagihan TsTech #%d", paymentID)
 	}
 
 	bodyMap := map[string]interface{}{
@@ -745,7 +745,7 @@ func (s *PaymentService) ProcessPaymentSuccess(payment *model.Payment) error {
 
 	var customerEmail string
 	var customerName string
-	var projectTitle string = "Layanan Software Kotban"
+	var projectTitle string = "Layanan Software TsTech"
 	handledProjectID := uint(0)
 
 	// 1. Process Order association if payment was made for an Order
@@ -1236,7 +1236,7 @@ func (s *PaymentService) VerifyDocument(docNumber, docType string) (map[string]i
 				"is_valid":        true,
 				"document_type":   "INVOICE",
 				"document_number": payment.InvoiceNumber,
-				"issuer":          "PT KOTBAN SOLUSI TEKNOLOGI",
+				"issuer":          "PT TSTECH SOLUSI TEKNOLOGI",
 				"client_name":     clientName,
 				"company_name":    companyName,
 				"project_title":   projectTitle,
@@ -1279,7 +1279,7 @@ func (s *PaymentService) VerifyDocument(docNumber, docType string) (map[string]i
 
 			clientName := "Klien Terdaftar"
 			companyName := ""
-			projectTitle := "Layanan Software Kotban"
+			projectTitle := "Layanan Software TsTech"
 			if project.ID > 0 {
 				projectTitle = project.Title
 				if project.Client.ID > 0 {
@@ -1292,7 +1292,7 @@ func (s *PaymentService) VerifyDocument(docNumber, docType string) (map[string]i
 				"is_valid":        true,
 				"document_type":   "SURAT PENAWARAN HARGA",
 				"document_number": fmt.Sprintf("QUO/%d%02d/%04d", q.CreatedAt.Year(), int(q.CreatedAt.Month()), q.ID),
-				"issuer":          "PT KOTBAN SOLUSI TEKNOLOGI",
+				"issuer":          "PT TSTECH SOLUSI TEKNOLOGI",
 				"client_name":     clientName,
 				"company_name":    companyName,
 				"project_title":   projectTitle,
@@ -1306,7 +1306,7 @@ func (s *PaymentService) VerifyDocument(docNumber, docType string) (map[string]i
 		}
 	}
 
-	return nil, errors.New("dokumen tidak ditemukan atau nomor dokumen tidak sah di sistem Kotban.com")
+	return nil, errors.New("dokumen tidak ditemukan atau nomor dokumen tidak sah di sistem TsTech")
 }
 
 // SyncPaymentWithGateway checks and synchronizes live payment status from the gateway
@@ -1330,7 +1330,7 @@ func (s *PaymentService) SyncPaymentWithGateway(paymentID uint) (*model.Payment,
 			slug = s.cfg.PakasirProjectSlug
 		}
 		if slug == "" {
-			slug = "kotban"
+			slug = "tstech"
 		}
 		apiKey := settings.PakasirAPIKey
 		if apiKey == "" {

@@ -1,9 +1,9 @@
 package router
 
 import (
-	"github.com/kotban/backend/internal/handler"
-	"github.com/kotban/backend/internal/middleware"
-	"github.com/kotban/backend/internal/service"
+	"github.com/tstech/backend/internal/handler"
+	"github.com/tstech/backend/internal/middleware"
+	"github.com/tstech/backend/internal/service"
 	"github.com/labstack/echo/v4"
 )
 
@@ -36,7 +36,7 @@ func Setup(e *echo.Echo, h *Handlers) {
 
 	// Health check
 	api.GET("/health", func(c echo.Context) error {
-		return c.JSON(200, map[string]string{"status": "ok", "service": "kotban-api"})
+		return c.JSON(200, map[string]string{"status": "ok", "service": "tstech-api"})
 	})
 
 	// Public CMS Content

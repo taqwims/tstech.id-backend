@@ -1,4 +1,4 @@
-module github.com/kotban/backend
+module github.com/tstech/backend
 
 go 1.25.0
 

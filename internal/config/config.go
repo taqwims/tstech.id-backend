@@ -88,23 +88,23 @@ func Load() *Config {
 		DBDriver:    getEnv("DB_DRIVER", "postgres"),
 		DBHost:      getEnv("DB_HOST", "localhost"),
 		DBPort:      getEnv("DB_PORT", "5432"),
-		DBUser:      getEnv("DB_USER", "kotban"),
-		DBPassword:  getEnv("DB_PASSWORD", "kotban_secret_2024"),
-		DBName:      getEnv("DB_NAME", "kotban_db"),
+		DBUser:      getEnv("DB_USER", "tstech"),
+		DBPassword:  getEnv("DB_PASSWORD", "tstech_secret_2024"),
+		DBName:      getEnv("DB_NAME", "tstech_db"),
 		DBSSLMode:   getEnv("DB_SSLMODE", "disable"),
 
 		APIPort: getEnv("PORT", getEnv("API_PORT", "8080")),
 		APIEnv:  getEnv("API_ENV", "development"),
 
-		JWTSecret:          getEnv("JWT_SECRET", "kotban-super-secret-key-change-me"),
+		JWTSecret:          getEnv("JWT_SECRET", "tstech-super-secret-key-change-me"),
 		JWTExpireHours:     jwtExpire,
 		JWTRefreshExpHours: jwtRefresh,
 
-		AdminEmail:    getEnv("ADMIN_EMAIL", "admin@kotban.com"),
+		AdminEmail:    getEnv("ADMIN_EMAIL", "admin@tstech.com"),
 		AdminPassword: getEnv("ADMIN_PASSWORD", "admin123"),
-		AdminName:     getEnv("ADMIN_NAME", "Admin Kotban"),
+		AdminName:     getEnv("ADMIN_NAME", "Admin TsTech"),
 
-		PakasirProjectSlug: getEnv("PAKASIR_PROJECT_SLUG", "kotban"),
+		PakasirProjectSlug: getEnv("PAKASIR_PROJECT_SLUG", "tstech"),
 		PakasirAPIKey:      getEnv("PAKASIR_API_KEY", ""),
 		PakasirQRISOnly:    pakasirQRISOnly,
 
@@ -123,19 +123,19 @@ func Load() *Config {
 		SMTPPort:      smtpPort,
 		SMTPUser:      getEnv("SMTP_USER", ""),
 		SMTPPassword:  getEnv("SMTP_PASSWORD", ""),
-		SMTPFromName:  getEnv("SMTP_FROM_NAME", "Kotban.com"),
-		SMTPFromEmail: getEnv("SMTP_FROM_EMAIL", "noreply@kotban.com"),
+		SMTPFromName:  getEnv("SMTP_FROM_NAME", "TsTech"),
+		SMTPFromEmail: getEnv("SMTP_FROM_EMAIL", "noreply@tstech.com"),
 
 		R2AccountID:       getEnv("R2_ACCOUNT_ID", ""),
 		R2AccessKeyID:     getEnv("R2_ACCESS_KEY_ID", ""),
 		R2SecretAccessKey:  getEnv("R2_SECRET_ACCESS_KEY", ""),
-		R2BucketName:      getEnv("R2_BUCKET_NAME", "kotban-files"),
+		R2BucketName:      getEnv("R2_BUCKET_NAME", "tstech-files"),
 		R2PublicURL:       getEnv("R2_PUBLIC_URL", ""),
 
 		WhatsAppNumber: getEnv("WHATSAPP_NUMBER", "628xxxxxxxxxx"),
 
 		AppURL:  getEnv("APP_URL", "http://localhost:3000"),
-		AppName: getEnv("APP_NAME", "Kotban.com"),
+		AppName: getEnv("APP_NAME", "TsTech"),
 	}
 }
 

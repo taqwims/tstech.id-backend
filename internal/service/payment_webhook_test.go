@@ -3,10 +3,10 @@ package service_test
 import (
 	"testing"
 
-	"github.com/kotban/backend/internal/config"
-	"github.com/kotban/backend/internal/model"
-	"github.com/kotban/backend/internal/repository"
-	"github.com/kotban/backend/internal/service"
+	"github.com/tstech/backend/internal/config"
+	"github.com/tstech/backend/internal/model"
+	"github.com/tstech/backend/internal/repository"
+	"github.com/tstech/backend/internal/service"
 	"github.com/stretchr/testify/assert"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
@@ -83,7 +83,7 @@ func TestPakasirWebhook(t *testing.T) {
 		"order_id":       "KTB-1",
 		"amount":         5000000,
 		"status":         "paid",
-		"project":        "kotban",
+		"project":        "tstech",
 		"payment_method": "qris",
 	}
 

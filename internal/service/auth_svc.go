@@ -5,9 +5,9 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
-	"github.com/kotban/backend/internal/config"
-	"github.com/kotban/backend/internal/model"
-	"github.com/kotban/backend/internal/repository"
+	"github.com/tstech/backend/internal/config"
+	"github.com/tstech/backend/internal/model"
+	"github.com/tstech/backend/internal/repository"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -144,7 +144,7 @@ func (s *AuthService) generateTokenPair(user *model.User) (*TokenPair, error) {
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(accessExpiry),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
-			Issuer:    "kotban-api",
+			Issuer:    "tstech-api",
 			Subject:   user.Email,
 		},
 	}
@@ -165,7 +165,7 @@ func (s *AuthService) generateTokenPair(user *model.User) (*TokenPair, error) {
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(refreshExpiry),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
-			Issuer:    "kotban-api-refresh",
+			Issuer:    "tstech-api-refresh",
 			Subject:   user.Email,
 		},
 	}

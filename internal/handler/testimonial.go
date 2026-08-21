@@ -3,8 +3,8 @@ package handler
 import (
 	"net/http"
 
-	"github.com/kotban/backend/internal/repository"
-	"github.com/kotban/backend/pkg/response"
+	"github.com/tstech/backend/internal/repository"
+	"github.com/tstech/backend/pkg/response"
 	"github.com/labstack/echo/v4"
 )
 

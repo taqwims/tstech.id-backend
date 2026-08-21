@@ -3,7 +3,7 @@ package database
 import (
 	"log"
 
-	"github.com/kotban/backend/internal/config"
+	"github.com/tstech/backend/internal/config"
 	"gorm.io/driver/postgres"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
@@ -20,8 +20,8 @@ func Connect(cfg *config.Config) *gorm.DB {
 	var err error
 
 	if cfg.DBDriver == "sqlite" {
-		log.Println("📦 Connecting to SQLite database (kotban.db)...")
-		db, err = gorm.Open(sqlite.Open("kotban.db"), &gorm.Config{
+		log.Println("📦 Connecting to SQLite database (tstech.db)...")
+		db, err = gorm.Open(sqlite.Open("tstech.db"), &gorm.Config{
 			Logger: logger.Default.LogMode(logLevel),
 		})
 	} else {
@@ -32,8 +32,8 @@ func Connect(cfg *config.Config) *gorm.DB {
 
 		// Automatic fallback to SQLite in development mode if PostgreSQL connection fails
 		if err != nil && cfg.APIEnv == "development" {
-			log.Printf("⚠️ Could not connect to PostgreSQL (%v). Falling back to local SQLite database (kotban.db)...", err)
-			db, err = gorm.Open(sqlite.Open("kotban.db"), &gorm.Config{
+			log.Printf("⚠️ Could not connect to PostgreSQL (%v). Falling back to local SQLite database (tstech.db)...", err)
+			db, err = gorm.Open(sqlite.Open("tstech.db"), &gorm.Config{
 				Logger: logger.Default.LogMode(logLevel),
 			})
 		}

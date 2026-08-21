@@ -6,10 +6,10 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/kotban/backend/internal/model"
-	"github.com/kotban/backend/internal/repository"
-	"github.com/kotban/backend/internal/service"
-	"github.com/kotban/backend/pkg/response"
+	"github.com/tstech/backend/internal/model"
+	"github.com/tstech/backend/internal/repository"
+	"github.com/tstech/backend/internal/service"
+	"github.com/tstech/backend/pkg/response"
 	"github.com/labstack/echo/v4"
 )
 
@@ -273,8 +273,8 @@ func (h *ClientHandler) CreateBalancePayment(c echo.Context) error {
 	}
 	_ = c.Bind(&reqBody)
 
-	buyerName := "Klien Kotban"
-	buyerEmail := "client@kotban.com"
+	buyerName := "Klien TsTech"
+	buyerEmail := "client@tstech.com"
 	buyerPhone := "081234567890"
 
 	if user != nil {

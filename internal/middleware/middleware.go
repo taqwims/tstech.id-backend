@@ -10,8 +10,8 @@ func CORS() echo.MiddlewareFunc {
 	return echoMiddleware.CORSWithConfig(echoMiddleware.CORSConfig{
 		AllowOrigins: []string{
 			"http://localhost:3000",
-			"https://kotban.com",
-			"https://www.kotban.com",
+			"https://tstech.com",
+			"https://www.tstech.com",
 			"https://*.vercel.app",
 		},
 		AllowMethods: []string{

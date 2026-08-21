@@ -11,7 +11,7 @@ type Article struct {
 	CoverImage      string     `gorm:"size:500" json:"cover_image"`
 	Category        string     `gorm:"size:100;index;not null" json:"category"`
 	Tags            string     `gorm:"size:255" json:"tags"` // Comma-separated or JSON string
-	AuthorName      string     `gorm:"size:150;default:'Tim Redaksi Kotban'" json:"author_name"`
+	AuthorName      string     `gorm:"size:150;default:'Tim Redaksi TsTech'" json:"author_name"`
 	AuthorAvatar    string     `gorm:"size:500" json:"author_avatar"`
 	AuthorRole      string     `gorm:"size:100;default:'Tech Writer & Engineer'" json:"author_role"`
 	Status          string     `gorm:"size:50;default:'published';index" json:"status"` // published, draft, archived

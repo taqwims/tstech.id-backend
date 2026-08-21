@@ -3,12 +3,12 @@ package main
 import (
 	"log"
 
-	"github.com/kotban/backend/internal/config"
-	"github.com/kotban/backend/internal/database"
-	"github.com/kotban/backend/internal/handler"
-	"github.com/kotban/backend/internal/repository"
-	"github.com/kotban/backend/internal/router"
-	"github.com/kotban/backend/internal/service"
+	"github.com/tstech/backend/internal/config"
+	"github.com/tstech/backend/internal/database"
+	"github.com/tstech/backend/internal/handler"
+	"github.com/tstech/backend/internal/repository"
+	"github.com/tstech/backend/internal/router"
+	"github.com/tstech/backend/internal/service"
 	"github.com/labstack/echo/v4"
 )
 
@@ -92,7 +92,7 @@ func main() {
 
 	// Start server
 	port := ":" + cfg.APIPort
-	log.Printf("🚀 Kotban API server starting on %s (env: %s)", port, cfg.APIEnv)
+	log.Printf("🚀 TsTech API server starting on %s (env: %s)", port, cfg.APIEnv)
 	if err := e.Start(port); err != nil {
 		log.Fatalf("Failed to start server: %v", err)
 	}

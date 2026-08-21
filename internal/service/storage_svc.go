@@ -15,7 +15,7 @@ import (
 	awsConfig "github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
-	"github.com/kotban/backend/internal/config"
+	"github.com/tstech/backend/internal/config"
 )
 
 type StorageService struct {
