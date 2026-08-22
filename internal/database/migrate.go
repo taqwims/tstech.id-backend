@@ -27,11 +27,19 @@ func Migrate(db *gorm.DB, cfg *config.Config) {
 		&model.SiteContent{},
 		&model.PaymentSetting{},
 		&model.Article{},
+		&model.Category{},
+		&model.Service{},
 	)
 	if err != nil {
 		log.Fatalf("Failed to run migrations: %v", err)
 	}
 	log.Println("✅ Database migrations completed")
+
+	// Auto seed Services
+	seedServices(db)
+
+	// Auto seed Categories
+	seedCategories(db)
 
 	// Auto seed Admin User
 	seedAdmin(db, cfg)
@@ -435,7 +443,15 @@ Bisnis yang sedang tumbuh membutuhkan integrasi ke berbagai sistem:
 - Kurir & Logistik API (JNE, SiCepat, J&T).
 - Sistem CRM, ERP, atau sistem pembukuan akuntansi internal.
 
-Website custom memberikan kebebasan 100% untuk menghubungkan API apa pun tanpa batasan arsitektur.
+## Perbandingan Langsung: Website Custom vs Template Instan
+
+| Parameter Kunci | Website Custom (TsTech) | Website Template Instan |
+| :--- | :--- | :--- |
+| **Kecepatan & Performa** | Skor PageSpeed 95-100 (Clean Code) | Skor 40-70 (Banyak Bloatware) |
+| **Keamanan Sistem** | Sangat Aman & Terenkripsi | Rentan Vulnerability Plugin |
+| **Skalabilitas Fitur** | Bebas Integrasi API Apa Pun | Dibatasi Fitur Bawaan Template |
+| **Kepemilikan Kode** | 100% Hak Milik Klien | Lisensi Sewa / Bergantung Tema |
+| **Dampak SEO Google** | Terstruktur & Cepat Masuk Halaman #1 | Sering Lambat & Sulit Bersaing |
 
 ---
 
@@ -594,4 +610,177 @@ Kami merancang sistem ERP dan Software Manajemen yang menyesuaikan SOP bisnis An
 	}
 	log.Println("📰 Seeded default SEO articles for Blog & Portal Berita")
 }
+
+func seedCategories(db *gorm.DB) {
+	var count int64
+	db.Model(&model.Category{}).Count(&count)
+	if count > 0 {
+		return
+	}
+
+	categories := []model.Category{
+		// Blog Categories
+		{Type: "blog", Name: "Web Development", Slug: "web-development", Description: "Wawasan seputar pengembangan website, web app modern, dan framework.", Icon: "🌐", SortOrder: 1, IsActive: true},
+		{Type: "blog", Name: "Mobile App", Slug: "mobile-app", Description: "Pengembangan aplikasi Android dan iOS native maupun cross-platform.", Icon: "📱", SortOrder: 2, IsActive: true},
+		{Type: "blog", Name: "SEO & Web Optimization", Slug: "seo-web-optimization", Description: "Strategi optimasi mesin pencari, Core Web Vitals, dan Search Intent.", Icon: "🚀", SortOrder: 3, IsActive: true},
+		{Type: "blog", Name: "Sistem Informasi", Slug: "sistem-informasi", Description: "Implementasi ERP, CRM, dan software manajemen operasional bisnis.", Icon: "⚙️", SortOrder: 4, IsActive: true},
+		{Type: "blog", Name: "Tips Bisnis", Slug: "tips-bisnis", Description: "Panduan strategi digitalisasi, efisiensi operasional, dan ROI teknologi.", Icon: "💡", SortOrder: 5, IsActive: true},
+		{Type: "blog", Name: "UI/UX Design", Slug: "ui-ux-design", Description: "Prinsip desain antarmuka, user experience, prototyping, dan design system.", Icon: "🎨", SortOrder: 6, IsActive: true},
+		{Type: "blog", Name: "Teknologi", Slug: "teknologi", Description: "Kabar tren arsitektur cloud, microservices, AI, dan keamanan siber.", Icon: "⚡", SortOrder: 7, IsActive: true},
+
+		// Portfolio Categories
+		{Type: "portfolio", Name: "Website & Web App", Slug: "website", Description: "Website company profile, web app SaaS, dan landing page konversi tinggi.", Icon: "🌐", SortOrder: 1, IsActive: true},
+		{Type: "portfolio", Name: "Mobile Application", Slug: "mobile-app", Description: "Aplikasi mobile iOS dan Android berkinerja tinggi untuk pengguna aktif.", Icon: "📱", SortOrder: 2, IsActive: true},
+		{Type: "portfolio", Name: "E-Commerce Platform", Slug: "e-commerce", Description: "Toko online terintegrasi payment gateway dan kurir logistik otomatis.", Icon: "🛒", SortOrder: 3, IsActive: true},
+		{Type: "portfolio", Name: "Sistem Informasi & ERP", Slug: "sistem-informasi", Description: "Software custom otomasi bisnis, inventori pergudangan, dan keuangan.", Icon: "⚙️", SortOrder: 4, IsActive: true},
+		{Type: "portfolio", Name: "UI/UX & Design System", Slug: "ui-ux", Description: "Desain prototype interaktif, visual branding, dan UI mockup figma.", Icon: "🎨", SortOrder: 5, IsActive: true},
+	}
+
+	for _, c := range categories {
+		db.Create(&c)
+	}
+	log.Println("🏷️ Seeded default categories for Blog & Portfolio")
+}
+
+func seedServices(db *gorm.DB) {
+	var count int64
+	db.Model(&model.Service{}).Count(&count)
+	if count > 0 {
+		return
+	}
+
+	services := []model.Service{
+		{
+			Slug:            "web-application-development-services",
+			Title:           "Web Application Development Services",
+			Tagline:         "Kami mengembangkan aplikasi web handal pada berbagai platform teknologi open-source mutakhir untuk memastikan skalabilitas tinggi dan pengelolaan anggaran yang efisien.",
+			Badge:           "Web Application Development",
+			Icon:            "🌐",
+			OverviewTitle:   "Scalable and Custom Web Application Development",
+			OverviewContent: "TsTech memanfaatkan teknologi web modern dan praktik engineering terbaik untuk membangun aplikasi web berkinerja tinggi, aman, dan dapat diskalakan yang memberikan hasil bisnis nyata. Jika Anda menginginkan aplikasi web yang user-friendly, intuitif, cepat, dan elegan di saat bersamaan – Anda berada di tempat yang tepat.\n\nKami mengutamakan efisiensi dalam setiap custom web application dengan menerapkan standar desain industri, clean architecture, dan pengujian ketat (QA & automated testing). Dengan begitu, klien kami menerima aplikasi web andal yang siap digunakan sejak hari pertama peluncuran. Penerapan metodologi agile memastikan proyek diselesaikan tepat waktu sesuai ruang lingkup dan anggaran.\n\nAplikasi web kustom menjawab keterbatasan software instan/template dengan memberikan fleksibilitas alur kerja (workflow), keamanan data tingkat enterprise, integrasi multi-sistem (API & database), dan performa tanpa beban bloatware.",
+			OverviewImage:   "https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=1000&auto=format&fit=crop&q=80",
+			ProcessTitle:    "Development Process",
+			ProcessContent:  "• **1. Planning & Analisis Kebutuhan**: Tahap fundamental untuk memetakan tujuan bisnis, alur kerja sistem, spesifikasi fitur, dan ekspektasi performa.\n• **2. UI/UX Design & Prototyping**: Perancangan antarmuka visual interaktif di Figma, pengujian alur pengguna (*user journey*), dan review bersama klien sebelum tahap coding.\n• **3. Web Development & Architecture**: Implementasi frontend dan backend menggunakan clean architecture, API modular, dan standar keamanan data modern.\n• **4. Comprehensive Testing & QA**: Pengujian fungsionalitas menyeluruh di berbagai browser dan resolusi layar, load testing, serta penanganan bug/vulnerabilitas.\n• **5. Deployment & Handover**: Peluncuran aplikasi ke server production (Cloud/VPS), konfigurasi domain & SSL, serah terima source code, dan pelatihan operasional.",
+			ProcessImage:    "https://images.unsplash.com/photo-1531403009284-440f080d1e12?w=800&auto=format&fit=crop&q=80",
+			TechTitle:       "Technologies & Tech Stack",
+			TechContent:     "### Frontend\n- Next.js (App Router, React 19)\n- Vue.js / Nuxt.js\n- React.js / Vite\n- TypeScript & TailwindCSS\n\n### Backend\n- Go (Echo / Gin / Fiber)\n- Node.js (NestJS / Express)\n- PHP (Laravel Framework)\n- Python (FastAPI / Django)\n\n### Database & Cache\n- PostgreSQL & MySQL\n- MongoDB & Firebase\n- Redis (Caching & Rate Limiting)\n\n### Cloud & DevOps\n- Docker & Containerization\n- Linux VPS / AWS / Cloudflare / Vercel\n- CI/CD Automated Deployment",
+			TechImage:       "https://images.unsplash.com/photo-1555066931-4365d14bab8c?w=800&auto=format&fit=crop&q=80",
+			CtaTitle:        "Siap Mewujudkan Aplikasi Web Impian Bisnis Anda?",
+			CtaDescription:  "Konsultasikan ide dan kebutuhan sistem Anda bersama tim lead architect TsTech. Dapatkan estimasi biaya transparan dan timeline pengerjaan yang jelas.",
+			CtaButtonText:   "Konsultasi Gratis Sekarang",
+			CtaButtonURL:    "/konsultasi",
+			SortOrder:       1,
+			IsActive:        true,
+			MetaTitle:       "Jasa Pembuatan Web Application Custom & Profesional | TsTech",
+			MetaDescription: "Jasa pengembangan web application scalable, aman, dan modern berbasis Next.js, Go, React, dan Laravel dengan arsitektur enterprise oleh TsTech.",
+			MetaKeywords:    "web application development, jasa pembuatan web app, custom web app indonesia, software house web application",
+		},
+		{
+			Slug:            "mobile-app-development",
+			Title:           "Mobile Application Development (Android & iOS)",
+			Tagline:         "Bangun aplikasi mobile native atau cross-platform berkinerja tinggi, responsif, dan interaktif untuk memperluas jangkauan pengguna dan meningkatkan loyalitas pelanggan.",
+			Badge:           "Mobile App Development",
+			Icon:            "📱",
+			OverviewTitle:   "High-Performance Mobile Apps Built for Growth",
+			OverviewContent: "Aplikasi smartphone kini menjadi saluran interaksi nomor satu antara bisnis dan pelanggan. TsTech mengembangkan aplikasi mobile untuk ekosistem Android dan iOS dengan fokus pada performa yang mulus (60 FPS), konsumsi baterai efisien, dan antarmuka yang ramah pengguna.\n\nKami menguasai pengembangan aplikasi cross-platform modern (Flutter & React Native) yang memungkinkan satu basis kode berkualitas tinggi berjalan di kedua platform sekaligus, memangkas biaya dan waktu peluncuran ke pasar hingga 50% tanpa mengorbankan kualitas native.",
+			OverviewImage:   "https://images.unsplash.com/photo-1512941937669-90a1b58e7e9c?w=1000&auto=format&fit=crop&q=80",
+			ProcessTitle:    "Mobile Development Lifecycle",
+			ProcessContent:  "• **1. Discovery & App Flow**: Menyusun user flow, wireframe interaksi, dan integrasi API yang dibutuhkan.\n• **2. High-Fidelity UI/UX**: Desain visual dengan animasi transisi yang halus sesuai panduan Material Design (Android) dan Human Interface Guidelines (iOS).\n• **3. Frontend & API Integration**: Pengerjaan aplikasi mobile dengan state management modular dan sinkronisasi data realtime.\n• **4. Device Lab Testing**: Pengujian di berbagai tipe smartphone nyata (layar kecil, tablet, OS versi berbeda, performa offline mode).\n• **5. Store Submission & Launch**: Bantuan publikasi aplikasi ke Google Play Store & Apple App Store hingga disetujui (live).",
+			ProcessImage:    "https://images.unsplash.com/photo-1526498460520-4c246339dccb?w=800&auto=format&fit=crop&q=80",
+			TechTitle:       "Mobile & Backend Stack",
+			TechContent:     "### Mobile Frameworks\n- Flutter (Dart)\n- React Native (TypeScript)\n- Swift (Native iOS)\n- Kotlin (Native Android)\n\n### Mobile Features\n- Push Notifications (Firebase FCM)\n- Offline Data Caching & SQLite\n- Biometric Login (Fingerprint / Face ID)\n- In-App Payment & QRIS Scanner\n- GPS Geolocation & Live Tracking\n\n### Backend Integration\n- RESTful API & GraphQL\n- WebSocket Real-time Messaging",
+			TechImage:       "https://images.unsplash.com/photo-1551650975-87deedd944c3?w=800&auto=format&fit=crop&q=80",
+			CtaTitle:        "Ingin Memiliki Aplikasi Mobile untuk Brand Anda?",
+			CtaDescription:  "Diskusikan fitur dan target platform aplikasi mobile Anda dengan tim engineering kami hari ini.",
+			CtaButtonText:   "Mulai Proyek Mobile App",
+			CtaButtonURL:    "/konsultasi",
+			SortOrder:       2,
+			IsActive:        true,
+			MetaTitle:       "Jasa Pembuatan Aplikasi Mobile Android & iOS | TsTech",
+			MetaDescription: "Jasa pembuatan aplikasi mobile Android dan iOS menggunakan Flutter dan React Native oleh software house profesional TsTech.",
+			MetaKeywords:    "jasa aplikasi android, jasa aplikasi ios, developer flutter indonesia, react native developer indonesia",
+		},
+		{
+			Slug:            "custom-erp-information-system",
+			Title:           "Custom Information Systems & ERP",
+			Tagline:         "Sistem ERP, CRM, POS, HRIS, dan software manajemen operasional kustom yang dirancang presisi mengikuti alur bisnis (SOP) perusahaan Anda.",
+			Badge:           "Enterprise Software",
+			Icon:            "⚙️",
+			OverviewTitle:   "Tailored Information Systems for Operational Excellence",
+			OverviewContent: "Software siap pakai di pasaran sering kali membatasi efisiensi operasional karena memaksa perusahaan menyesuaikan proses kerja dengan software yang kaku. Solusi Custom ERP & Sistem Informasi dari TsTech dirancang khusus dari nol untuk menjawab tantangan operasional unik bisnis Anda.\n\nDari integrasi manajemen multi-gudang, pencatatan transaksi otomatis, hingga laporan keuangan laba-rugi realtime — sistem kami memangkas human error dan meningkatkan produktivitas seluruh tim.",
+			OverviewImage:   "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=1000&auto=format&fit=crop&q=80",
+			ProcessTitle:    "Enterprise Implementation Workflow",
+			ProcessContent:  "• **1. Business Process Mapping**: Analisis SOP, formulir kerja, hierarki persetujuan (approval matrix), dan alur data antar divisi.\n• **2. System Architecture Design**: Perancangan skema database terenkripsi, hak akses pengguna bertingkat (Role-Based Access Control), dan modul sistem.\n• **3. Agile Module Development**: Pembangunan modul inti secara bertahap (Inventori, Penjualan, Akuntansi, SDM) dengan demo berkala.\n• **4. Data Migration & UAT**: Migrasi data lama dari Excel/sistem lawas dan pengujian penerimaan pengguna (User Acceptance Test) oleh staf Anda.\n• **5. On-Premise / Cloud Deployment & Training**: Instalasi di server perusahaan atau cloud privat, disertai dokumentasi SOP dan pelatihan intensif.",
+			ProcessImage:    "https://images.unsplash.com/photo-1507679799987-c73779587ccf?w=800&auto=format&fit=crop&q=80",
+			TechTitle:       "Enterprise Architecture Stack",
+			TechContent:     "### Core Technologies\n- React / Next.js Admin Dashboards\n- Go Microservices / High-Throughput REST APIs\n- PostgreSQL Enterprise Database\n- Docker & Kubernetes Orchestration\n\n### Key Enterprise Modules\n- Multi-Warehouse Inventory (FIFO / Average)\n- Point of Sales (POS) & Billing Systems\n- Automated Financial Reports (Balance Sheet, P&L)\n- Role-Based Access Control (RBAC) & Audit Logs\n- Barcode / QR Code Scanner & Thermal Printing",
+			TechImage:       "https://images.unsplash.com/photo-1504868584819-f8e8b4b6d7e3?w=800&auto=format&fit=crop&q=80",
+			CtaTitle:        "Otomasi & Digitalisasi Operasional Bisnis Anda",
+			CtaDescription:  "Diskusikan alur kerja sistem perusahaan Anda dan dapatkan blueprint arsitektur sistem dari tim konsultan TsTech.",
+			CtaButtonText:   "Konsultasi Sistem ERP",
+			CtaButtonURL:    "/konsultasi",
+			SortOrder:       3,
+			IsActive:        true,
+			MetaTitle:       "Jasa Pembuatan Sistem Informasi & ERP Custom | TsTech",
+			MetaDescription: "Software house penyedia jasa pembuatan software ERP kustom, CRM, POS, dan sistem manajemen perusahaan terintegrasi.",
+			MetaKeywords:    "software erp custom, jasa sistem informasi manajemen, software house jakarta, aplikasi gudang custom",
+		},
+		{
+			Slug:            "ui-ux-design-prototyping",
+			Title:           "UI/UX Design & Interactive Prototyping",
+			Tagline:         "Rancang antarmuka produk digital yang modern, estetis, intuitif, dan berpusat pada pengguna (user-centered) untuk memaksimalkan kepuasan dan konversi.",
+			Badge:           "UI/UX Design",
+			Icon:            "🎨",
+			OverviewTitle:   "User-Centered Product Design & Complete Design Systems",
+			OverviewContent: "Desain yang hebat bukan hanya tentang tampilan visual yang memukau, melainkan tentang bagaimana produk tersebut terasa mudah, menyenangkan, dan efisien saat digunakan oleh pelanggan. Tim UI/UX designer TsTech mengombinasikan riset mendalam perilaku pengguna, arsitektur informasi terstruktur, dan estetika visual kelas dunia.\n\nKami menyusun Design System modular di Figma yang siap dieksekusi oleh developer tanpa kebingungan (seamless developer handoff).",
+			OverviewImage:   "https://images.unsplash.com/photo-1581291518857-4e27b48ff24e?w=1000&auto=format&fit=crop&q=80",
+			ProcessTitle:    "Design Thinking & Prototyping Process",
+			ProcessContent:  "• **1. User & Competitor Research**: Memahami target persona audiens, pain points, dan analisis benchmarking industri.\n• **2. Information Architecture & Wireframing**: Membuat sketsa kerangka struktur halaman (low-fidelity wireframes) untuk memvalidasi alur navigasi.\n• **3. Visual UI Design**: Pembuatan desain antarmuka pixel-perfect dengan palet warna harmonis, tipografi modern, dan komponen interaktif.\n• **4. Clickable Interactive Prototype**: Prototipe Figma yang dapat diklik dan disimulasikan seperti aplikasi nyata untuk pengujian pengguna.\n• **5. Design System & Handoff**: Dokumentasi token warna, font, komponen UI, dan aset siap ekspor untuk tim developer.",
+			ProcessImage:    "https://images.unsplash.com/photo-1542744094-3a31f272c490?w=800&auto=format&fit=crop&q=80",
+			TechTitle:       "Design Tools & Deliverables",
+			TechContent:     "### Design Tools\n- Figma (Auto Layout, Variables, Component Libraries)\n- Adobe Creative Suite (Illustrator, Photoshop)\n- Whimsical & FigJam (Flowcharts & User Journeys)\n\n### Deliverables\n- Full High-Fidelity UI Mockups\n- Interactive Clickable Prototype (Figma)\n- Reusable Component Design System\n- Responsive Desktop, Tablet, & Mobile Layouts\n- Iconography & Vector Illustrations",
+			TechImage:       "https://images.unsplash.com/photo-1507238691740-187a5b1d37b8?w=800&auto=format&fit=crop&q=80",
+			CtaTitle:        "Wujudkan Desain Produk Digital Berkualitas Tinggi",
+			CtaDescription:  "Tingkatkan konversi dan kepuasan pengguna aplikasi Anda dengan desain antarmuka modern buatan tim desainer TsTech.",
+			CtaButtonText:   "Konsultasi Desain UI/UX",
+			CtaButtonURL:    "/konsultasi",
+			SortOrder:       4,
+			IsActive:        true,
+			MetaTitle:       "Jasa Desain UI/UX & Prototyping Figma | TsTech",
+			MetaDescription: "Layanan desain UI/UX antarmuka website dan aplikasi mobile modern, interaktif, dan berpusat pada pengguna oleh TsTech.",
+			MetaKeywords:    "jasa ui ux design, desainer figma indonesia, prototype web app, desain sistem figma",
+		},
+		{
+			Slug:            "maintenance-cloud-support",
+			Title:           "Maintenance & Cloud Infrastructure Support",
+			Tagline:         "Layanan pemeliharaan teknis berkelanjutan, pembaruan keamanan, monitoring performa 24/7, dan otomatisasi backup untuk menjamin uptime maksimal website & aplikasi Anda.",
+			Badge:           "Cloud & Maintenance",
+			Icon:            "🔧",
+			OverviewTitle:   "Reliable Engineering Support & Cloud Optimization",
+			OverviewContent: "Peluncuran website atau aplikasi hanyalah awal dari siklus hidup produk digital Anda. Tanpa pemeliharaan rutin, sistem rentan terhadap celah keamanan, penurunan kecepatan muat halaman, dan gangguan server (downtime) yang merugikan bisnis.\n\nLayanan Maintenance & Cloud Support TsTech memastikan infrastruktur digital Anda selalu dalam kondisi prima, aman dari serangan siber, dan berjalan dengan kecepatan puncak.",
+			OverviewImage:   "https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=1000&auto=format&fit=crop&q=80",
+			ProcessTitle:    "Proactive Maintenance Protocol",
+			ProcessContent:  "• **1. System & Security Audit**: Pemeriksaan menyeluruh terhadap patch sistem operasi, dependensi library, dan celah keamanan.\n• **2. 24/7 Uptime & Performance Monitoring**: Pemantauan realtime terhadap ketersediaan server, waktu respon, dan penggunaan beban CPU/RAM.\n• **3. Automated Cloud Backups**: Pencadangan data otomatis harian/mingguan ke penyimpanan cloud terpisah dengan mekanisme recovery cepat.\n• **4. Bug Fixing & Content Updates**: Penanganan segera terhadap kendala teknis dan bantuan pembaruan konten secara berkala.\n• **5. Monthly Health Report**: Pengiriman laporan berkala performa sistem, rekam jejak uptime, dan saran optimasi kapasitas.",
+			ProcessImage:    "https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=800&auto=format&fit=crop&q=80",
+			TechTitle:       "Cloud Technologies & Tools",
+			TechContent:     "### Cloud Providers & Platforms\n- Amazon Web Services (AWS)\n- Google Cloud Platform (GCP)\n- DigitalOcean & Linode VPS\n- Cloudflare CDN, DNS, & DDoS Protection\n\n### Monitoring & DevOps\n- Prometheus & Grafana Metrics\n- Sentry Error Tracking & Alerts\n- Automated SSL Certificate Renewal\n- Offsite S3 Encrypted Database Backups",
+			TechImage:       "https://images.unsplash.com/photo-1544197150-b99a580bb7a8?w=800&auto=format&fit=crop&q=80",
+			CtaTitle:        "Lindungi & Optimalkan Sistem Digital Anda",
+			CtaDescription:  "Serahkan urusan teknis dan pemeliharaan server kepada tim ahli TsTech agar Anda dapat fokus mengembangkan bisnis.",
+			CtaButtonText:   "Amankan Sistem Anda",
+			CtaButtonURL:    "/konsultasi",
+			SortOrder:       5,
+			IsActive:        true,
+			MetaTitle:       "Jasa Maintenance Website, Aplikasi & Cloud Server | TsTech",
+			MetaDescription: "Layanan pemeliharaan sistem, monitoring server 24/7, security audit, dan cloud optimization untuk kestabilan bisnis Anda.",
+			MetaKeywords:    "jasa maintenance website, pemeliharaan aplikasi, cloud support indonesia, server monitoring",
+		},
+	}
+
+	for _, s := range services {
+		db.Create(&s)
+	}
+	log.Println("🚀 Seeded default services with detailed sections")
+}
+
 

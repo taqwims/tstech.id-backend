@@ -36,6 +36,8 @@ func main() {
 	quotationRepo := repository.NewQuotationRepo(db)
 	siteContentRepo := repository.NewSiteContentRepo(db)
 	articleRepo := repository.NewArticleRepo(db)
+	categoryRepo := repository.NewCategoryRepo(db)
+	serviceRepo := repository.NewServiceRepo(db)
 
 	// Initialize services
 	emailSvc := service.NewEmailService(cfg)
@@ -46,6 +48,7 @@ func main() {
 	paymentSvc := service.NewPaymentService(db, cfg, orderRepo, userRepo, emailSvc)
 	contentSvc := service.NewContentService(siteContentRepo)
 	articleSvc := service.NewArticleService(articleRepo)
+	serviceSvc := service.NewServiceService(serviceRepo)
 	projectSvc := service.NewProjectService(
 		db,
 		projectRepo,
@@ -77,10 +80,12 @@ func main() {
 			consultationRepo,
 			contactRepo,
 		),
-		Client:  handler.NewClientHandler(projectSvc, userRepo, storageSvc, paymentSvc),
-		Content: handler.NewContentHandler(contentSvc),
-		Article: handler.NewArticleHandler(articleSvc),
-		AuthSvc: authSvc,
+		Client:   handler.NewClientHandler(projectSvc, userRepo, storageSvc, paymentSvc),
+		Content:  handler.NewContentHandler(contentSvc),
+		Article:  handler.NewArticleHandler(articleSvc),
+		Category: handler.NewCategoryHandler(categoryRepo),
+		Service:  handler.NewServiceHandler(serviceSvc),
+		AuthSvc:  authSvc,
 	}
 
 	// Setup Echo server

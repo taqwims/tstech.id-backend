@@ -19,6 +19,8 @@ type Handlers struct {
 	Client       *handler.ClientHandler
 	Content      *handler.ContentHandler
 	Article      *handler.ArticleHandler
+	Category     *handler.CategoryHandler
+	Service      *handler.ServiceHandler
 	AuthSvc      *service.AuthService
 }
 
@@ -85,6 +87,13 @@ func Setup(e *echo.Echo, h *Handlers) {
 	api.GET("/articles/categories", h.Article.Categories)
 	api.GET("/articles/sitemap", h.Article.Sitemap)
 	api.GET("/articles/:slug", h.Article.GetBySlug)
+
+	// Categories (Blog & Portfolio)
+	api.GET("/categories", h.Category.List)
+
+	// Services
+	api.GET("/services", h.Service.List)
+	api.GET("/services/:slug", h.Service.GetBySlug)
 
 	// Contacts
 	contacts := api.Group("/contacts")
@@ -164,6 +173,20 @@ func Setup(e *echo.Echo, h *Handlers) {
 	admin.PUT("/articles/:id", h.Article.AdminUpdate)
 	admin.DELETE("/articles/:id", h.Article.AdminDelete)
 	admin.PUT("/articles/:id/toggle-status", h.Article.AdminToggleStatus)
+
+	// Category Management (Blog & Portfolio)
+	admin.GET("/categories", h.Category.AdminList)
+	admin.POST("/categories", h.Category.Create)
+	admin.PUT("/categories/:id", h.Category.Update)
+	admin.DELETE("/categories/:id", h.Category.Delete)
+
+	// Services Management
+	admin.GET("/services", h.Service.AdminList)
+	admin.GET("/services/:id", h.Service.AdminGetByID)
+	admin.POST("/services", h.Service.AdminCreate)
+	admin.PUT("/services/:id", h.Service.AdminUpdate)
+	admin.DELETE("/services/:id", h.Service.AdminDelete)
+	admin.PUT("/services/:id/toggle-status", h.Service.AdminToggleStatus)
 
 	// User Management
 	admin.GET("/users", h.Admin.ListUsers)
