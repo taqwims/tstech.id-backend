@@ -38,6 +38,7 @@ func main() {
 	articleRepo := repository.NewArticleRepo(db)
 	categoryRepo := repository.NewCategoryRepo(db)
 	serviceRepo := repository.NewServiceRepo(db)
+	productRepo := repository.NewProductRepo(db)
 
 	// Initialize services
 	emailSvc := service.NewEmailService(cfg)
@@ -49,6 +50,7 @@ func main() {
 	contentSvc := service.NewContentService(siteContentRepo)
 	articleSvc := service.NewArticleService(articleRepo)
 	serviceSvc := service.NewServiceService(serviceRepo)
+	productSvc := service.NewProductService(productRepo)
 	projectSvc := service.NewProjectService(
 		db,
 		projectRepo,
@@ -85,6 +87,7 @@ func main() {
 		Article:  handler.NewArticleHandler(articleSvc),
 		Category: handler.NewCategoryHandler(categoryRepo),
 		Service:  handler.NewServiceHandler(serviceSvc),
+		Product:  handler.NewProductHandler(productSvc),
 		AuthSvc:  authSvc,
 	}
 

@@ -21,6 +21,7 @@ type Handlers struct {
 	Article      *handler.ArticleHandler
 	Category     *handler.CategoryHandler
 	Service      *handler.ServiceHandler
+	Product      *handler.ProductHandler
 	AuthSvc      *service.AuthService
 }
 
@@ -94,6 +95,11 @@ func Setup(e *echo.Echo, h *Handlers) {
 	// Services
 	api.GET("/services", h.Service.List)
 	api.GET("/services/:slug", h.Service.GetBySlug)
+
+	// Products (Public)
+	api.GET("/products", h.Product.List)
+	api.GET("/products/featured", h.Product.Featured)
+	api.GET("/products/:slug", h.Product.GetBySlug)
 
 	// Contacts
 	contacts := api.Group("/contacts")
@@ -187,6 +193,15 @@ func Setup(e *echo.Echo, h *Handlers) {
 	admin.PUT("/services/:id", h.Service.AdminUpdate)
 	admin.DELETE("/services/:id", h.Service.AdminDelete)
 	admin.PUT("/services/:id/toggle-status", h.Service.AdminToggleStatus)
+
+	// Products Management
+	admin.GET("/products", h.Product.AdminList)
+	admin.GET("/products/:id", h.Product.AdminGetByID)
+	admin.POST("/products", h.Product.AdminCreate)
+	admin.PUT("/products/:id", h.Product.AdminUpdate)
+	admin.DELETE("/products/:id", h.Product.AdminDelete)
+	admin.PUT("/products/:id/toggle-status", h.Product.AdminToggleStatus)
+	admin.PUT("/products/:id/toggle-featured", h.Product.AdminToggleFeatured)
 
 	// User Management
 	admin.GET("/users", h.Admin.ListUsers)

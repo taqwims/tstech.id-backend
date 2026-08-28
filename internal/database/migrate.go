@@ -29,11 +29,15 @@ func Migrate(db *gorm.DB, cfg *config.Config) {
 		&model.Article{},
 		&model.Category{},
 		&model.Service{},
+		&model.Product{},
 	)
 	if err != nil {
 		log.Fatalf("Failed to run migrations: %v", err)
 	}
 	log.Println("✅ Database migrations completed")
+
+	// Auto seed Products
+	seedProducts(db)
 
 	// Auto seed Services
 	seedServices(db)
@@ -781,6 +785,166 @@ func seedServices(db *gorm.DB) {
 		db.Create(&s)
 	}
 	log.Println("🚀 Seeded default services with detailed sections")
+}
+
+func seedProducts(db *gorm.DB) {
+	var count int64
+	db.Model(&model.Product{}).Count(&count)
+	if count > 0 {
+		return
+	}
+
+	products := []model.Product{
+		{
+			Slug:          "pos-resto-multi-branch",
+			Title:         "TsTech POS & Resto Multi-Branch Cloud",
+			Tagline:       "Sistem Kasir & Manajemen Restoran, Kafe, dan F&B Berbasis Cloud Terintegrasi Multi-Outlet",
+			Badge:         "SaaS & Ready Product",
+			Category:      "Point of Sale",
+			Icon:          "🍽️",
+			Thumbnail:     "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=800&auto=format&fit=crop&q=80",
+			Images:        `["https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=1000&auto=format&fit=crop&q=80","https://images.unsplash.com/photo-1556742049-0a67e55722c0?w=1000&auto=format&fit=crop&q=80","https://images.unsplash.com/photo-1508873696983-2df5703bc20d?w=1000&auto=format&fit=crop&q=80"]`,
+			Price:         3500000,
+			PriceDiscount: 4900000,
+			PriceType:     "one_time",
+			DemoURL:       "https://demo-resto.kotban.com",
+			DocURL:        "https://docs.kotban.com/pos-resto",
+			Features:      "• **Kitchen Display System (KDS)**: Tiket pesanan otomatis terkirim langsung ke layar dapur realtime.\n• **Multi-Outlet Synchronization**: Kelola menu, harga, dan stok dari ratusan cabang dalam satu dashboard pusat.\n• **QR Table Ordering**: Pelanggan scan barcode di meja, pesan menu, dan bayar mandiri tanpa antre.\n• **Payment Gateway QRIS & VA**: Mendukung pembayaran tunai, QRIS Dinamis, GoPay, OVO, ShopeePay, dan Transfer Bank.\n• **Inventori Resep & HPP (COGS)**: Pengurangan stok bahan baku otomatis berdasarkan takaran menu terjual.\n• **Laporan Penjualan & Laba/Rugi**: Rekapitulasi omset harian, shift kasir, split bill, dan analisa menu terlaris.",
+			TechStack:     "Next.js 15, Go (Echo), PostgreSQL, TailwindCSS, WebSocket, Redis",
+			Overview:      "### Solusi Kasir Digital Modern untuk Pertumbuhan Bisnis F&B Anda\n\nTsTech POS & Resto dirancang khusus untuk memenuhi kebutuhan operasional restoran cepat saji, coffee shop, bakery, hingga fine dining dengan banyak cabang. Dengan arsitektur hybrid online-offline, transaksi tetap berjalan lancar meski koneksi internet terputus sesaat.\n\n### Keunggulan Utama:\n- **Tanpa Biaya Langganan Bulanan**: Dapatkan source code penuh dan deploy di server milik Anda sendiri (100% Hak Milik).\n- **Kecepatan Transaksi Tinggi**: UI didesain sangat intuitif untuk kasir, memproses pesanan dalam hitungan detik.\n- **Support Hardware Kasir Lengkap**: Kompatibel dengan printer thermal Bluetooth/USB, cash drawer, dan barcode scanner.",
+			IsFeatured:    true,
+			IsActive:      true,
+			SortOrder:     1,
+			MetaTitle:     "Software Kasir Restoran & Kafe Multi-Cabang | TsTech POS Resto",
+			MetaDescription: "Software POS dan manajemen resto berbasis cloud lengkap dengan KDS, QR Dine-In, stok bahan baku, dan integrasi QRIS.",
+			MetaKeywords:  "software kasir resto, aplikasi pos restoran, pos cloud cafe, aplikasi fnb multi cabang",
+		},
+		{
+			Slug:          "erp-core-enterprise",
+			Title:         "TsTech ERP Core Enterprise Edition",
+			Tagline:       "Software Manajemen Stok Multi-Gudang, Akuntansi, Purchasing, dan Distribusi Penjualan",
+			Badge:         "Enterprise Solution",
+			Category:      "ERP & Keuangan",
+			Icon:          "🏢",
+			Thumbnail:     "https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=800&auto=format&fit=crop&q=80",
+			Images:        `["https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=1000&auto=format&fit=crop&q=80","https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=1000&auto=format&fit=crop&q=80"]`,
+			Price:         9500000,
+			PriceDiscount: 14000000,
+			PriceType:     "one_time",
+			DemoURL:       "https://demo-erp.kotban.com",
+			DocURL:        "https://docs.kotban.com/erp-core",
+			Features:      "• **Multi-Warehouse & Bin Location**: Pelacakan stok realtime di berbagai gudang, nomor batch, dan expiry date.\n• **Akuntansi Standar PSAK**: Jurnal otomatis, buku besar, neraca saldo, laporan laba rugi, dan arus kas otomatis.\n• **Procurement & Purchase Approval**: Alur pengajuan PO bertingkat dengan validasi limit anggaran departemen.\n• **Sales Order & Invoicing**: Penerbitan penawaran harga, surat jalan, faktur pajak PPN 11%, dan kuitansi pelunasan.\n• **Role-Based Access Control (RBAC)**: Pembatasan hak akses detail per divisi (Gudang, Sales, Finance, Direksi).\n• **Audit Trail & Log Lengkap**: Rekam jejak seluruh aktivitas manipulasi data untuk mencegah fraud internal.",
+			TechStack:     "React, Go, PostgreSQL, Redis, Docker, TailwindCSS",
+			Overview:      "### Otomatisasi Alur Kerja Bisnis Menyeluruh Tanpa Batasan Lisensi User\n\nTsTech ERP Core Enterprise menjembatani divisi gudang, keuangan, pengadaan, dan penjualan ke dalam satu platform terpadu. Dibuat dengan clean architecture Go dan PostgreSQL berkinerja tinggi, sistem sanggup menangani jutaan baris transaksi tanpa lag.\n\n### Mengapa Memilih TsTech ERP?\n1. **Unlimited Users & Unlimited Data**: Tidak ada batasan jumlah staf atau jumlah cabang.\n2. **Customizable**: Mudah disesuaikan dengan SOP khusus perusahaan Anda.\n3. **Export Laporan Lengkap**: Ekspor Excel, PDF, dan API integrasi ke sistem pihak ketiga.",
+			IsFeatured:    true,
+			IsActive:      true,
+			SortOrder:     2,
+			MetaTitle:     "Software ERP Manajemen Stok & Akuntansi Perusahaan | TsTech ERP",
+			MetaDescription: "Software ERP custom Indonesia untuk manajemen pergudangan, keuangan PSAK, sales order, dan procurement tanpa biaya langganan bulanan.",
+			MetaKeywords:  "software erp indonesia, aplikasi stok gudang, software akuntansi enterprise, custom erp go",
+		},
+		{
+			Slug:          "klinik-emr-satusehat",
+			Title:         "TsTech Medika & Clinic EMR (SatuSehat Ready)",
+			Tagline:       "Aplikasi Rekam Medis Elektronik (RME) Standar Kemenkes, Antrean Pasien & Kasir Apotek",
+			Badge:         "Kemenkes SatuSehat Ready",
+			Category:      "Klinik & Medika",
+			Icon:          "🏥",
+			Thumbnail:     "https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=800&auto=format&fit=crop&q=80",
+			Images:        `["https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=1000&auto=format&fit=crop&q=80","https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?w=1000&auto=format&fit=crop&q=80"]`,
+			Price:         6500000,
+			PriceDiscount: 8900000,
+			PriceType:     "one_time",
+			DemoURL:       "https://demo-medika.kotban.com",
+			DocURL:        "https://docs.kotban.com/medika-emr",
+			Features:      "• **Standar SatuSehat Kemenkes**: Format data FHIR terstandarisasi siap sinkronisasi ke platform SatuSehat.\n• **Rekam Medis Elektronik (SOAP)**: Input diagnosa ICD-10, tindakan ICD-9-CM, odontogram gigi, dan riwayat alergi.\n• **Sistem Antrean Poliklinik & Display Suara**: Panggilan nomor antrean otomatis dengan audio dan monitor TV ruang tunggu.\n• **Manajemen Apotek & Stok Obat**: Pengurangan obat otomatis dari e-resep dokter, kartu stok, dan peringatan expired.\n• **Billing & Pembayaran Kasir**: Cetak nota pembayaran, kuitansi tindakan medis, dan integrasi pembayaran QRIS.",
+			TechStack:     "Next.js 15, Go (Echo), PostgreSQL, TailwindCSS",
+			Overview:      "### Digitalisasi Klinik Anda Sesuai Regulasi Permenkes No. 24 Tahun 2022\n\nTsTech Medika EMR membantu klinik pratama, klinik utama, dan tempat praktik mandiri dokter mengelola pendaftaran pasien, pencatatan rekam medis elektronik, antrean, hingga kasir apotek dengan cepat, akurat, dan aman.\n\n### Fitur Utama:\n- Enkripsi Data Medis Tingkat Tinggi\n- E-Prescription & Label Obat Otomatis\n- Manajemen Jadwal Praktik Dokter & Kuota Pasien",
+			IsFeatured:    true,
+			IsActive:      true,
+			SortOrder:     3,
+			MetaTitle:     "Software Rekam Medis Elektronik Klinik SatuSehat | TsTech Medika",
+			MetaDescription: "Software RME klinik terintegrasi SatuSehat Kemenkes, antrean poli, kasir apotek, dan manajemen jadwal dokter.",
+			MetaKeywords:  "software klinik satusehat, aplikasi rme klinik, rekam medis elektronik, software apotek klinik",
+		},
+		{
+			Slug:          "smart-school-lms-cbt",
+			Title:         "TsTech School LMS & Smart Academic Platform",
+			Tagline:       "Platform E-Learning Interaktif, Bank Soal CBT Anti-Curang, Administrasi SPP & Rapor Digital",
+			Badge:         "Popular for Education",
+			Category:      "Sekolah & LMS",
+			Icon:          "📚",
+			Thumbnail:     "https://images.unsplash.com/photo-1509062522246-3755977927d7?w=800&auto=format&fit=crop&q=80",
+			Images:        `["https://images.unsplash.com/photo-1509062522246-3755977927d7?w=1000&auto=format&fit=crop&q=80","https://images.unsplash.com/photo-1503676260728-1c00da094a0b?w=1000&auto=format&fit=crop&q=80"]`,
+			Price:         4500000,
+			PriceDiscount: 6500000,
+			PriceType:     "one_time",
+			DemoURL:       "https://demo-school.kotban.com",
+			DocURL:        "https://docs.kotban.com/school-lms",
+			Features:      "• **Computer Based Test (CBT) Anti-Curang**: Acak soal & opsi jawaban, deteksi pindah tab, dan timer otomatis.\n• **Manajemen Materi & Video Pembelajaran**: Upload modul PDF, video interaktif, dan kuis berkala per topik.\n• **Pembayaran SPP & Tagihan Online**: Terintegrasi Virtual Account Bank dan QRIS dengan notifikasi WhatsApp ke wali murid.\n• **Presensi & Absensi Siswa QR Code**: Guru scan kartu siswa atau siswa presensi mandiri saat tiba di sekolah.\n• **E-Rapor Kurikulum Merdeka**: Pengolahan nilai formatif, sumatif, dan cetak rapor standar Kurikulum Merdeka.",
+			TechStack:     "Next.js, Node.js / Go, PostgreSQL, Cloudflare S3",
+			Overview:      "### Solusi Digital Terpadu untuk Sekolah Modern & Pesantren\n\nTsTech School LMS memudahkan guru membuat bahan ajar dan ujian online yang aman dari kecurangan, sekaligus memberikan kemudahan bagi manajemen sekolah dalam mengelola administrasi keuangan SPP dan rekapitulasi nilai.",
+			IsFeatured:    false,
+			IsActive:      true,
+			SortOrder:     4,
+			MetaTitle:     "Aplikasi Smart School & LMS CBT Ujian Online | TsTech School",
+			MetaDescription: "Sistem informasi akademik sekolah, CBT ujian online anti curang, pembayaran SPP QRIS, dan e-rapor kurikulum merdeka.",
+			MetaKeywords:  "aplikasi sekolah lms, software cbt ujian sekolah, sistem informasi akademik, aplikasi pembayaran spp",
+		},
+		{
+			Slug:          "b2b-wholesale-ecommerce",
+			Title:         "TsTech B2B Commerce & Wholesale Platform",
+			Tagline:       "Platform E-Commerce B2B Grosir, Tiered Pricing, Integrasi Kargo Logistik & Distributor Portal",
+			Badge:         "High Scalability",
+			Category:      "E-Commerce",
+			Icon:          "🛒",
+			Thumbnail:     "https://images.unsplash.com/photo-1556742049-0a67e55722c0?w=800&auto=format&fit=crop&q=80",
+			Images:        `["https://images.unsplash.com/photo-1556742049-0a67e55722c0?w=1000&auto=format&fit=crop&q=80","https://images.unsplash.com/photo-1472851294608-062f824d29cc?w=1000&auto=format&fit=crop&q=80"]`,
+			Price:         7500000,
+			PriceDiscount: 11000000,
+			PriceType:     "one_time",
+			DemoURL:       "https://demo-b2b.kotban.com",
+			DocURL:        "https://docs.kotban.com/b2b-commerce",
+			Features:      "• **Tiered Pricing & Minimum Order Quantity (MOQ)**: Harga khusus untuk Reseller, Agen, dan Distributor Utama.\n• **Request for Quotation (RFQ)**: Fitur negosiasi harga partai besar langsung dalam antarmuka web.\n• **Integrasi Ekspedisi Kargo & Ongkir Otomatis**: Menghitung tarif pengiriman kargo darat/laut/udara otomatis.\n• **Term of Payment (TOP / Tempo)**: Manajemen plafon kredit dan jatuh tempo penagihan piutang distributor.\n• **Pajak Faktur PPN & PPh 22**: Otomatisasi penerbitan e-faktur sesuai regulasi perpajakan B2B.",
+			TechStack:     "Next.js 15, Go, PostgreSQL, Redis, Elasticsearch",
+			Overview:      "### Tingkatkan Penjualan Grosir dan Distribusi Produk Skala Nasional\n\nPlatform B2B Commerce TsTech dirancang untuk produsen, distributor, dan pemilik brand yang ingin mendigitalkan jalur pemesanan agen dan grosir secara transparan dan efisien.",
+			IsFeatured:    true,
+			IsActive:      true,
+			SortOrder:     5,
+			MetaTitle:     "Platform E-Commerce B2B Grosir & Distributor | TsTech B2B",
+			MetaDescription: "Platform marketplace B2B dan e-commerce grosir dengan harga bertingkat, tempo pembayaran, dan kalkulasi ongkir kargo.",
+			MetaKeywords:  "ecommerce b2b indonesia, platform grosir distributor, software b2b marketplace",
+		},
+		{
+			Slug:          "hr-payroll-face-recognition",
+			Title:         "TsTech HR & Payroll Pro (Face Recognition & GPS)",
+			Tagline:       "Aplikasi Absensi Geolocation Anti-Fake GPS, Perhitungan Gaji PPh 21 TER, Cuti & KPI",
+			Badge:         "Best Seller",
+			Category:      "HRM & Payroll",
+			Icon:          "💼",
+			Thumbnail:     "https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=800&auto=format&fit=crop&q=80",
+			Images:        `["https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=1000&auto=format&fit=crop&q=80","https://images.unsplash.com/photo-1600880292203-757bb62b4baf?w=1000&auto=format&fit=crop&q=80"]`,
+			Price:         5000000,
+			PriceDiscount: 7500000,
+			PriceType:     "one_time",
+			DemoURL:       "https://demo-hr.kotban.com",
+			DocURL:        "https://docs.kotban.com/hr-payroll",
+			Features:      "• **Absensi Wajah & Radius Geofencing**: Deteksi biometrik wajah dan verifikasi lokasi GPS anti fake GPS / mock location.\n• **Kalkulator Gaji Otomatis (PPh 21 TER & BPJS)**: Perhitungan pajak tarif efektif rata-rata (TER) dan iuran BPJS TK & Kesehatan.\n• **Pengajuan Cuti, Izin & Reimbursement**: Approval bertingkat langsung dari smartphone atasan secara realtime.\n• **Distribusi Slip Gaji PDF & WhatsApp**: Kirim slip gaji digital terenkripsi password langsung ke WhatsApp karyawan.\n• **Manajemen Shift Kerja Fleksibel**: Support sistem kerja 3 shift, lembur (overtime), dan tukar jadwal jaga.",
+			TechStack:     "React, Go, Flutter (Mobile Android & iOS), PostgreSQL",
+			Overview:      "### Kelola Manajemen Karyawan dan Payroll Tanpa Kerumitan Manual\n\nTsTech HR & Payroll Pro menghemat waktu tim HRD hingga 80% dalam merekap absensi dan menghitung penggajian bulanan.",
+			IsFeatured:    true,
+			IsActive:      true,
+			SortOrder:     6,
+			MetaTitle:     "Aplikasi Absensi GPS Wajah & Payroll PPh 21 TER | TsTech HR",
+			MetaDescription: "Aplikasi HRIS absensi GPS selfie, perhitungan gaji PPh 21 TER otomatis, cuti online, dan slip gaji WhatsApp.",
+			MetaKeywords:  "aplikasi absensi online gps, software payroll pph 21, aplikasi hris indonesia, slip gaji whatsapp",
+		},
+	}
+
+	for _, p := range products {
+		db.Create(&p)
+	}
+	log.Println("🛍️ Seeded default ready-to-sell products")
 }
 
 
