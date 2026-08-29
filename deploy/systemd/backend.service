@@ -1,0 +1,21 @@
+[Unit]
+Description=TsTech / Kotban Backend Go API Service
+After=network.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/var/www/kotban/backend
+ExecStart=/var/www/kotban/backend/server_bin
+Restart=always
+RestartSec=5s
+EnvironmentFile=/var/www/kotban/backend/.env
+
+# Security & limits
+LimitNOFILE=65535
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=kotban-backend
+
+[Install]
+WantedBy=multi-user.target

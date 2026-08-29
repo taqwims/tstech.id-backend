@@ -62,29 +62,39 @@ func Migrate(db *gorm.DB, cfg *config.Config) {
 }
 
 func seedAdmin(db *gorm.DB, cfg *config.Config) {
-	var count int64
-	db.Model(&model.User{}).Where("role = ?", "admin").Count(&count)
-	if count == 0 {
-		hashed, err := bcrypt.GenerateFromPassword([]byte(cfg.AdminPassword), bcrypt.DefaultCost)
-		if err != nil {
-			log.Printf("⚠️ Failed to hash admin password: %v", err)
-			return
-		}
+	hashed, err := bcrypt.GenerateFromPassword([]byte(cfg.AdminPassword), bcrypt.DefaultCost)
+	if err != nil {
+		log.Printf("⚠️ Failed to hash admin password: %v", err)
+		return
+	}
 
-		admin := model.User{
-			Email:       cfg.AdminEmail,
-			Password:    string(hashed),
-			Name:        cfg.AdminName,
-			Role:        "admin",
-			Phone:       cfg.WhatsAppNumber,
-			CompanyName: "TsTech",
-			IsActive:    true,
+	adminEmails := []string{cfg.AdminEmail, "admin@tstech.id", "admin@tstech.com"}
+	for _, email := range adminEmails {
+		if email == "" {
+			continue
 		}
-
-		if err := db.Create(&admin).Error; err != nil {
-			log.Printf("⚠️ Failed to seed admin user: %v", err)
+		var user model.User
+		if err := db.Where("email = ?", email).First(&user).Error; err != nil {
+			newAdmin := model.User{
+				Email:       email,
+				Password:    string(hashed),
+				Name:        cfg.AdminName,
+				Role:        "admin",
+				Phone:       cfg.WhatsAppNumber,
+				CompanyName: "TSTech",
+				IsActive:    true,
+			}
+			if err := db.Create(&newAdmin).Error; err != nil {
+				log.Printf("⚠️ Failed to seed admin user (%s): %v", email, err)
+			} else {
+				log.Printf("👑 Seeded admin user: %s (Password: %s)", email, cfg.AdminPassword)
+			}
 		} else {
-			log.Printf("👑 Seeded default admin user: %s (Password: %s)", cfg.AdminEmail, cfg.AdminPassword)
+			user.Password = string(hashed)
+			user.Role = "admin"
+			user.IsActive = true
+			db.Save(&user)
+			log.Printf("👑 Refreshed admin credentials for: %s (Password: %s)", email, cfg.AdminPassword)
 		}
 	}
 }
