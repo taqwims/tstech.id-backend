@@ -6,11 +6,11 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/labstack/echo/v4"
 	"github.com/tstech/backend/internal/model"
 	"github.com/tstech/backend/internal/repository"
 	"github.com/tstech/backend/internal/service"
 	"github.com/tstech/backend/pkg/response"
-	"github.com/labstack/echo/v4"
 )
 
 type ClientHandler struct {
@@ -274,7 +274,7 @@ func (h *ClientHandler) CreateBalancePayment(c echo.Context) error {
 	_ = c.Bind(&reqBody)
 
 	buyerName := "Klien TsTech"
-	buyerEmail := "client@tstech.com"
+	buyerEmail := "client@tstech.id"
 	buyerPhone := "081234567890"
 
 	if user != nil {

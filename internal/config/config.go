@@ -61,7 +61,7 @@ type Config struct {
 	// Cloudflare R2
 	R2AccountID       string
 	R2AccessKeyID     string
-	R2SecretAccessKey  string
+	R2SecretAccessKey string
 	R2BucketName      string
 	R2PublicURL       string
 
@@ -100,7 +100,7 @@ func Load() *Config {
 		JWTExpireHours:     jwtExpire,
 		JWTRefreshExpHours: jwtRefresh,
 
-		AdminEmail:    getEnv("ADMIN_EMAIL", "admin@tstech.com"),
+		AdminEmail:    getEnv("ADMIN_EMAIL", "admin@tstech.id"),
 		AdminPassword: getEnv("ADMIN_PASSWORD", "admin123"),
 		AdminName:     getEnv("ADMIN_NAME", "Admin TsTech"),
 
@@ -124,11 +124,11 @@ func Load() *Config {
 		SMTPUser:      getEnv("SMTP_USER", ""),
 		SMTPPassword:  getEnv("SMTP_PASSWORD", ""),
 		SMTPFromName:  getEnv("SMTP_FROM_NAME", "TsTech"),
-		SMTPFromEmail: getEnv("SMTP_FROM_EMAIL", "noreply@tstech.com"),
+		SMTPFromEmail: getEnv("SMTP_FROM_EMAIL", "noreply@tstech.id"),
 
 		R2AccountID:       getEnv("R2_ACCOUNT_ID", ""),
 		R2AccessKeyID:     getEnv("R2_ACCESS_KEY_ID", ""),
-		R2SecretAccessKey:  getEnv("R2_SECRET_ACCESS_KEY", ""),
+		R2SecretAccessKey: getEnv("R2_SECRET_ACCESS_KEY", ""),
 		R2BucketName:      getEnv("R2_BUCKET_NAME", "tstech-files"),
 		R2PublicURL:       getEnv("R2_PUBLIC_URL", ""),
 

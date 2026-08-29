@@ -437,7 +437,7 @@ func (s *PaymentService) callMayarAPI(paymentID uint, req *CreatePaymentRequest,
 
 	buyerEmail := strings.TrimSpace(req.BuyerEmail)
 	if buyerEmail == "" || !strings.Contains(buyerEmail, "@") {
-		buyerEmail = "client@tstech.com"
+		buyerEmail = "client@tstech.id"
 	}
 
 	// Mayar strictly requires 'mobile' to have length >= 10
