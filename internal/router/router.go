@@ -101,6 +101,9 @@ func Setup(e *echo.Echo, h *Handlers) {
 	api.GET("/products/featured", h.Product.Featured)
 	api.GET("/products/:slug", h.Product.GetBySlug)
 
+	// Site Content (Public)
+	api.GET("/content", h.Admin.ListContent)
+
 	// Contacts
 	contacts := api.Group("/contacts")
 	contacts.Use(middleware.RateLimiter())
