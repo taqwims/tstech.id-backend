@@ -156,6 +156,7 @@ func Setup(e *echo.Echo, h *Handlers) {
 	admin.POST("/orders/:id/convert-to-project", h.Admin.ConvertOrderToProject)
 
 	// Portfolios Management
+	admin.GET("/portfolios/:id", h.Admin.GetPortfolioByID)
 	admin.POST("/portfolios", h.Admin.CreatePortfolio)
 	admin.PUT("/portfolios/:id", h.Admin.UpdatePortfolio)
 	admin.DELETE("/portfolios/:id", h.Admin.DeletePortfolio)

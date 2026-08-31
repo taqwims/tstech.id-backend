@@ -500,6 +500,16 @@ func (h *AdminHandler) ToggleUserStatus(c echo.Context) error {
 
 // ==================== PORTFOLIO CRUD ====================
 
+// GET /api/admin/portfolios/:id
+func (h *AdminHandler) GetPortfolioByID(c echo.Context) error {
+	id, _ := strconv.Atoi(c.Param("id"))
+	p, err := h.portfolioRepo.FindByID(uint(id))
+	if err != nil || p == nil {
+		return response.Error(c, http.StatusNotFound, "Portofolio tidak ditemukan")
+	}
+	return response.Success(c, p)
+}
+
 // POST /api/admin/portfolios
 func (h *AdminHandler) CreatePortfolio(c echo.Context) error {
 	var p model.Portfolio

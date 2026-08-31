@@ -18,11 +18,16 @@ type Portfolio struct {
 	Problem     string         `json:"problem" gorm:"type:text"`
 	Solution    string         `json:"solution" gorm:"type:text"`
 	TechStack   string         `json:"tech_stack"` // comma-separated
-	Result      string         `json:"result" gorm:"type:text"`
-	DemoURL     string         `json:"demo_url"`
-	IsFeatured  bool           `json:"is_featured" gorm:"default:false;index"`
-	SortOrder   int            `json:"sort_order" gorm:"default:0"`
-	CreatedAt   time.Time      `json:"created_at"`
-	UpdatedAt   time.Time      `json:"updated_at"`
-	DeletedAt   gorm.DeletedAt `json:"-" gorm:"index"`
+	Result             string         `json:"result" gorm:"type:text"`
+	DemoURL            string         `json:"demo_url"`
+	IsFeatured         bool           `json:"is_featured" gorm:"default:false;index"`
+	SortOrder          int            `json:"sort_order" gorm:"default:0"`
+	TestimonialQuote   string         `json:"testimonial_quote" gorm:"type:text"`
+	TestimonialAuthor  string         `json:"testimonial_author"`
+	TestimonialRole    string         `json:"testimonial_role"`
+	TestimonialCompany string         `json:"testimonial_company"`
+	TestimonialAvatar  string         `json:"testimonial_avatar"`
+	CreatedAt          time.Time      `json:"created_at"`
+	UpdatedAt          time.Time      `json:"updated_at"`
+	DeletedAt          gorm.DeletedAt `json:"-" gorm:"index"`
 }
