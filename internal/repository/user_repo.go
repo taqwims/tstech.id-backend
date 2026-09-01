@@ -15,6 +15,10 @@ func NewUserRepo(db *gorm.DB) *UserRepo {
 	return &UserRepo{db: db}
 }
 
+func (r *UserRepo) GetDB() *gorm.DB {
+	return r.db
+}
+
 func (r *UserRepo) Create(user *model.User) error {
 	return r.db.Create(user).Error
 }

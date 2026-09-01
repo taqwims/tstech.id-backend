@@ -31,6 +31,14 @@ type Product struct {
 	MetaDescription string       `json:"meta_description" gorm:"type:text"`
 	MetaKeywords  string         `json:"meta_keywords" gorm:"size:255"`
 
+	// Unified SaaS & Multi-Tenancy Engine fields
+	IsSaaS           bool           `json:"is_saas" gorm:"default:false;index"`
+	SubdomainPattern string         `json:"subdomain_pattern" gorm:"size:255"` // e.g. "{tenant}.schola.tstech.id"
+	BaseDomain       string         `json:"base_domain" gorm:"size:255"`       // e.g. "schola.tstech.id"
+	WebhookURL       string         `json:"webhook_url" gorm:"size:255"`       // Webhook to satellite app
+	APISecretKey     string         `json:"api_secret_key" gorm:"size:255"`   // Secret for SSO & license verify
+	Plans            []SaaSPlan     `json:"plans,omitempty" gorm:"foreignKey:ProductID"`
+
 	CreatedAt     time.Time      `json:"created_at"`
 	UpdatedAt     time.Time      `json:"updated_at"`
 	DeletedAt     gorm.DeletedAt `json:"-" gorm:"index"`

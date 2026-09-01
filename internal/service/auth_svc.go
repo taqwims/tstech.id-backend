@@ -2,6 +2,8 @@ package service
 
 import (
 	"errors"
+	"fmt"
+	"strings"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -127,6 +129,173 @@ func (s *AuthService) ValidateToken(tokenString string) (*JWTClaims, error) {
 	}
 
 	return claims, nil
+}
+
+// FirebaseLogin handles authentication from Google / Firebase on tstech.id portal
+func (s *AuthService) FirebaseLogin(email, name, avatarURL, phone string) (*model.User, *TokenPair, error) {
+	if email == "" {
+		return nil, nil, errors.New("email dari akun Google/Firebase tidak valid")
+	}
+
+	user, err := s.userRepo.FindByEmail(email)
+	if err != nil || user == nil {
+		// Auto-register new client from Google Sign-In
+		if name == "" {
+			name = strings.Split(email, "@")[0]
+		}
+		randomPass := fmt.Sprintf("GAuth_%d_%s", time.Now().UnixNano(), email)
+		hashedPass, _ := bcrypt.GenerateFromPassword([]byte(randomPass), bcrypt.DefaultCost)
+
+		user = &model.User{
+			Email:     email,
+			Password:  string(hashedPass),
+			Name:      name,
+			AvatarURL: avatarURL,
+			Phone:     phone,
+			Role:      "client",
+			IsActive:  true,
+		}
+
+		if err := s.userRepo.Create(user); err != nil {
+			return nil, nil, fmt.Errorf("gagal membuat user: %w", err)
+		}
+	} else {
+		if !user.IsActive {
+			return nil, nil, errors.New("akun Anda telah dinonaktifkan")
+		}
+		if avatarURL != "" && user.AvatarURL == "" {
+			user.AvatarURL = avatarURL
+			_ = s.userRepo.UpdateProfile(user.ID, map[string]interface{}{"avatar_url": avatarURL})
+		}
+	}
+
+	now := time.Now()
+	s.userRepo.UpdateLastLogin(user.ID, &now)
+
+	tokens, err := s.generateTokenPair(user)
+	if err != nil {
+		return nil, nil, errors.New("gagal membuat session token")
+	}
+
+	return user, tokens, nil
+}
+
+type SSOVerifyResult struct {
+	Valid              bool   `json:"valid"`
+	UserID             uint   `json:"user_id"`
+	Email              string `json:"email"`
+	Name               string `json:"name"`
+	Role               string `json:"role"`
+	TenantSlug         string `json:"tenant_slug"`
+	FullSubdomain      string `json:"full_subdomain"`
+	SubscriptionNumber string `json:"subscription_number"`
+	PlanCode           string `json:"plan_code"`
+	PlanName           string `json:"plan_name"`
+	MaxUsers           int    `json:"max_users"`
+	MaxStorageGB       int    `json:"max_storage_gb"`
+	Issuer             string `json:"iss"`
+}
+
+// VerifySSOToken parses and validates a signed SSO JWT from satellite SaaS
+func (s *AuthService) VerifySSOToken(tokenString, secretKey string) (*SSOVerifyResult, error) {
+	candidates := []string{}
+	if secretKey != "" {
+		candidates = append(candidates, secretKey)
+	}
+
+	// Try reading product_slug or tenant_slug from unverified claims to find product secret
+	parser := jwt.NewParser()
+	unvToken, _, _ := parser.ParseUnverified(tokenString, jwt.MapClaims{})
+	if unvToken != nil {
+		if unvClaims, ok := unvToken.Claims.(jwt.MapClaims); ok {
+			if prodSlug, ok := unvClaims["product_slug"].(string); ok && prodSlug != "" {
+				var prod model.SaaSProduct
+				if err := s.userRepo.GetDB().Where("slug = ?", prodSlug).First(&prod).Error; err == nil && prod.APISecretKey != "" {
+					candidates = append(candidates, prod.APISecretKey)
+				}
+			}
+		}
+	}
+
+	candidates = append(candidates, s.cfg.JWTSecret)
+
+	var token *jwt.Token
+	var lastErr error
+
+	for _, sec := range candidates {
+		t, err := jwt.Parse(tokenString, func(tok *jwt.Token) (interface{}, error) {
+			if _, ok := tok.Method.(*jwt.SigningMethodHMAC); !ok {
+				return nil, errors.New("signing method tidak valid")
+			}
+			return []byte(sec), nil
+		})
+		if err == nil && t.Valid {
+			token = t
+			break
+		}
+		lastErr = err
+	}
+
+	if token == nil || !token.Valid {
+		errMsg := "SSO token tidak valid atau telah kedaluwarsa"
+		if lastErr != nil {
+			errMsg = fmt.Sprintf("SSO token tidak valid: %v", lastErr)
+		}
+		return nil, errors.New(errMsg)
+	}
+
+	claims, ok := token.Claims.(jwt.MapClaims)
+	if !ok {
+		return nil, errors.New("claims tidak dapat dibaca")
+	}
+
+	var uid uint
+	if subStr, ok := claims["sub"].(string); ok {
+		var idInt int
+		fmt.Sscanf(subStr, "%d", &idInt)
+		uid = uint(idInt)
+	}
+
+	email, _ := claims["email"].(string)
+	name, _ := claims["name"].(string)
+	role, _ := claims["role"].(string)
+	if role == "" {
+		role = "admin"
+	}
+	tenantSlug, _ := claims["tenant_slug"].(string)
+	fullSubdomain, _ := claims["full_subdomain"].(string)
+	subNumber, _ := claims["subscription_number"].(string)
+	if subNumber == "" {
+		subNumber, _ = claims["subscription_id"].(string)
+	}
+	planCode, _ := claims["plan_code"].(string)
+	planName, _ := claims["plan_name"].(string)
+	iss, _ := claims["iss"].(string)
+
+	var maxUsers int
+	if mu, ok := claims["max_users"].(float64); ok {
+		maxUsers = int(mu)
+	}
+	var maxStorage int
+	if ms, ok := claims["max_storage_gb"].(float64); ok {
+		maxStorage = int(ms)
+	}
+
+	return &SSOVerifyResult{
+		Valid:              true,
+		UserID:             uid,
+		Email:              email,
+		Name:               name,
+		Role:               role,
+		TenantSlug:         tenantSlug,
+		FullSubdomain:      fullSubdomain,
+		SubscriptionNumber: subNumber,
+		PlanCode:           planCode,
+		PlanName:           planName,
+		MaxUsers:           maxUsers,
+		MaxStorageGB:       maxStorage,
+		Issuer:             iss,
+	}, nil
 }
 
 func (s *AuthService) GetUserByID(id uint) (*model.User, error) {

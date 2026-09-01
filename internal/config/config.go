@@ -68,6 +68,12 @@ type Config struct {
 	// WhatsApp
 	WhatsAppNumber string
 
+	// SaaS & SSO Domains
+	SaaSBaseDomain     string
+	SaaSSSOProtocol    string
+	SaaSDevURLOverride string
+	HubAPIURL          string
+
 	// App
 	AppURL  string
 	AppName string
@@ -134,6 +140,11 @@ func Load() *Config {
 
 		WhatsAppNumber: getEnv("WHATSAPP_NUMBER", "628xxxxxxxxxx"),
 
+		SaaSBaseDomain:     getEnv("SAAS_BASE_DOMAIN", "tstech.id"),
+		SaaSSSOProtocol:    getEnv("SAAS_SSO_PROTOCOL", "https"),
+		SaaSDevURLOverride: getEnv("SAAS_DEV_URL_OVERRIDE", ""),
+		HubAPIURL:          getEnv("HUB_API_URL", "http://localhost:8080/api"),
+
 		AppURL:  getEnv("APP_URL", "http://localhost:3000"),
 		AppName: getEnv("APP_NAME", "TsTech"),
 	}
@@ -173,9 +184,7 @@ func loadDotEnv() {
 				value := strings.TrimSpace(parts[1])
 				// Clean quotes if present
 				value = strings.Trim(value, `"'`)
-				if _, exists := os.LookupEnv(key); !exists {
-					os.Setenv(key, value)
-				}
+				os.Setenv(key, value)
 			}
 		}
 		break

@@ -22,6 +22,7 @@ type Handlers struct {
 	Category     *handler.CategoryHandler
 	Service      *handler.ServiceHandler
 	Product      *handler.ProductHandler
+	SaaS         *handler.SaaSHandler
 	AuthSvc      *service.AuthService
 }
 
@@ -50,8 +51,11 @@ func Setup(e *echo.Echo, h *Handlers) {
 	auth := api.Group("/auth")
 	auth.POST("/register", h.Auth.Register)
 	auth.POST("/login", h.Auth.Login)
+	auth.POST("/firebase", h.Auth.FirebaseLogin)
 	auth.POST("/refresh", h.Auth.Refresh)
 	auth.GET("/me", h.Auth.Me, middleware.JWTAuth(h.AuthSvc))
+	auth.POST("/sso/verify", h.Auth.VerifySSO)
+	auth.GET("/sso/verify", h.Auth.VerifySSO)
 
 	// Consultations
 	api.POST("/consultations", h.Consultation.Create)
@@ -101,6 +105,14 @@ func Setup(e *echo.Echo, h *Handlers) {
 	api.GET("/products/featured", h.Product.Featured)
 	api.GET("/products/:slug", h.Product.GetBySlug)
 
+	// SaaS Catalog, Subdomain Checker & License Verification (Public)
+	api.GET("/saas/products", h.SaaS.GetProducts)
+	api.GET("/saas/products/:slug", h.SaaS.GetProductDetail)
+	api.GET("/saas/check-subdomain", h.SaaS.CheckSubdomain)
+	api.GET("/saas/license/verify", h.SaaS.VerifyLicense)
+	api.GET("/saas/verify", h.SaaS.VerifyLicense)
+	api.POST("/webhooks/mayar", h.SaaS.HandleMayarWebhook)
+
 	// Site Content (Public)
 	api.GET("/content", h.Admin.ListContent)
 
@@ -122,6 +134,15 @@ func Setup(e *echo.Echo, h *Handlers) {
 	client.POST("/projects/:id/files", h.Client.UploadFile)
 	client.PUT("/projects/:id/quotation/respond", h.Client.RespondQuotation)
 	client.POST("/projects/:id/pay-balance", h.Client.CreateBalancePayment)
+
+	// Client SaaS Subscriptions & Invoices
+	client.POST("/saas/subscribe", h.SaaS.Subscribe)
+	client.GET("/saas/subscriptions", h.SaaS.GetUserSubscriptions)
+	client.GET("/saas/subscriptions/:id", h.SaaS.GetSubscriptionDetail)
+	client.POST("/saas/subscriptions/:id/sso-token", h.SaaS.GenerateSSOToken)
+	client.GET("/invoices", h.SaaS.GetUserInvoices)
+	client.GET("/invoices/:id", h.SaaS.GetInvoiceDetail)
+	client.POST("/invoices/:id/manual-proof", h.SaaS.SubmitManualProof)
 
 	// ==================== ADMIN PROTECTED ROUTES ====================
 	admin := api.Group("/admin")
@@ -198,7 +219,7 @@ func Setup(e *echo.Echo, h *Handlers) {
 	admin.DELETE("/services/:id", h.Service.AdminDelete)
 	admin.PUT("/services/:id/toggle-status", h.Service.AdminToggleStatus)
 
-	// Products Management
+	// Products Management & SaaS Plans
 	admin.GET("/products", h.Product.AdminList)
 	admin.GET("/products/:id", h.Product.AdminGetByID)
 	admin.POST("/products", h.Product.AdminCreate)
@@ -206,6 +227,9 @@ func Setup(e *echo.Echo, h *Handlers) {
 	admin.DELETE("/products/:id", h.Product.AdminDelete)
 	admin.PUT("/products/:id/toggle-status", h.Product.AdminToggleStatus)
 	admin.PUT("/products/:id/toggle-featured", h.Product.AdminToggleFeatured)
+	admin.POST("/products/:id/plans", h.Product.AdminCreatePlan)
+	admin.PUT("/plans/:id", h.Product.AdminUpdatePlan)
+	admin.DELETE("/plans/:id", h.Product.AdminDeletePlan)
 
 	// User Management
 	admin.GET("/users", h.Admin.ListUsers)
@@ -216,6 +240,22 @@ func Setup(e *echo.Echo, h *Handlers) {
 	admin.PUT("/payment-settings", h.Payment.UpdateAdminSettings)
 	admin.GET("/payments", h.Payment.ListAdminPayments)
 	admin.PUT("/payments/:id/verify", h.Payment.VerifyAdminPayment)
+
+	// SaaS Subscriptions & Invoices Management (Admin)
+	admin.GET("/saas/stats", h.SaaS.AdminGetStats)
+	admin.GET("/saas/products", h.SaaS.AdminGetAllProducts)
+	admin.POST("/saas/products", h.SaaS.AdminCreateProduct)
+	admin.PUT("/saas/products/:id", h.SaaS.AdminUpdateProduct)
+	admin.DELETE("/saas/products/:id", h.SaaS.AdminDeleteProduct)
+	admin.POST("/saas/products/:id/plans", h.SaaS.AdminCreatePlan)
+	admin.PUT("/saas/plans/:id", h.SaaS.AdminUpdatePlan)
+	admin.DELETE("/saas/plans/:id", h.SaaS.AdminDeletePlan)
+	admin.GET("/saas/subscriptions", h.SaaS.AdminGetAllSubscriptions)
+	admin.POST("/saas/subscriptions", h.SaaS.AdminCreateSubscription)
+	admin.PUT("/saas/subscriptions/:id", h.SaaS.AdminUpdateSubscription)
+	admin.DELETE("/saas/subscriptions/:id", h.SaaS.AdminDeleteSubscription)
+	admin.GET("/invoices", h.SaaS.AdminGetAllInvoices)
+	admin.POST("/invoices/:id/approve", h.SaaS.AdminApproveInvoice)
 
 	// File Upload
 	admin.POST("/upload", h.Admin.UploadFile)

@@ -30,11 +30,19 @@ func Migrate(db *gorm.DB, cfg *config.Config) {
 		&model.Category{},
 		&model.Service{},
 		&model.Product{},
+		&model.SaaSProduct{},
+		&model.SaaSPlan{},
+		&model.SaaSSubscription{},
+		&model.Invoice{},
 	)
 	if err != nil {
 		log.Fatalf("Failed to run migrations: %v", err)
 	}
 	log.Println("✅ Database migrations completed")
+
+	// Auto seed SaaS Products & Plans
+	seedSaaSProducts(db)
+	seedSampleSubscription(db)
 
 	// Auto seed Products
 	seedProducts(db)
@@ -923,27 +931,111 @@ func seedProducts(db *gorm.DB) {
 		},
 		{
 			Slug:            "smart-school-lms-cbt",
-			Title:           "TsTech School LMS & Smart Academic Platform",
-			Tagline:         "Platform E-Learning Interaktif, Bank Soal CBT Anti-Curang, Administrasi SPP & Rapor Digital",
-			Badge:           "Popular for Education",
+			Title:           "Schola LMS & Sistem Informasi Manajemen Sekolah",
+			Tagline:         "Platform E-Learning Interaktif, Bank Soal CBT Anti-Curang, Administrasi SPP & Rapor Digital Terpadu",
+			Badge:           "Popular for Education & SaaS",
 			Category:        "Sekolah & LMS",
-			Icon:            "📚",
-			Thumbnail:       "https://images.unsplash.com/photo-1509062522246-3755977927d7?w=800&auto=format&fit=crop&q=80",
-			Images:          `["https://images.unsplash.com/photo-1509062522246-3755977927d7?w=1000&auto=format&fit=crop&q=80","https://images.unsplash.com/photo-1503676260728-1c00da094a0b?w=1000&auto=format&fit=crop&q=80"]`,
+			Icon:            "🏫",
+			Thumbnail:       "https://images.unsplash.com/photo-1580582932707-520aed937b7b?w=800&auto=format&fit=crop&q=80",
+			Images:          `["https://images.unsplash.com/photo-1580582932707-520aed937b7b?w=1000&auto=format&fit=crop&q=80","https://images.unsplash.com/photo-1509062522246-3755977927d7?w=1000&auto=format&fit=crop&q=80"]`,
 			Price:           4500000,
 			PriceDiscount:   6500000,
 			PriceType:       "one_time",
-			DemoURL:         "https://demo-school.kotban.com",
-			DocURL:          "https://docs.kotban.com/school-lms",
-			Features:        "• **Computer Based Test (CBT) Anti-Curang**: Acak soal & opsi jawaban, deteksi pindah tab, dan timer otomatis.\n• **Manajemen Materi & Video Pembelajaran**: Upload modul PDF, video interaktif, dan kuis berkala per topik.\n• **Pembayaran SPP & Tagihan Online**: Terintegrasi Virtual Account Bank dan QRIS dengan notifikasi WhatsApp ke wali murid.\n• **Presensi & Absensi Siswa QR Code**: Guru scan kartu siswa atau siswa presensi mandiri saat tiba di sekolah.\n• **E-Rapor Kurikulum Merdeka**: Pengolahan nilai formatif, sumatif, dan cetak rapor standar Kurikulum Merdeka.",
-			TechStack:       "Next.js, Node.js / Go, PostgreSQL, Cloudflare S3",
+			DemoURL:         "https://demo.schola.tstech.id",
+			DocURL:          "https://docs.tstech.id/schola",
+			Features:        "• **Subdomain Sekolah Instan**: Contoh: `smkn1.schola.tstech.id` langsung aktif otomatis.\n• **E-Rapor Kurikulum Merdeka & K13**: Cetak rapor format resmi Kemendikbudristek sekali klik.\n• **CBT (Computer Based Test)**: Ujian online anti-curang dengan browser lockdown dan bank soal fleksibel.\n• **Billing & Notifikasi Tagihan SPP WhatsApp**: Orang tua menerima slip rincian SPP dan bayar via QRIS/VA otomatis.\n• **Portal Guru, Siswa & Wali Murid**: Akses nilai, jadwal mengajar, materi LMS, dan absensi harian realtime.",
+			TechStack:       "Next.js 15, Go (Echo), PostgreSQL, Cloudflare S3",
 			Overview:        "### Solusi Digital Terpadu untuk Sekolah Modern & Pesantren\n\nTsTech School LMS memudahkan guru membuat bahan ajar dan ujian online yang aman dari kecurangan, sekaligus memberikan kemudahan bagi manajemen sekolah dalam mengelola administrasi keuangan SPP dan rekapitulasi nilai.",
-			IsFeatured:      false,
+			IsFeatured:      true,
 			IsActive:        true,
 			SortOrder:       4,
 			MetaTitle:       "Aplikasi Smart School & LMS CBT Ujian Online | TsTech School",
 			MetaDescription: "Sistem informasi akademik sekolah, CBT ujian online anti curang, pembayaran SPP QRIS, dan e-rapor kurikulum merdeka.",
 			MetaKeywords:    "aplikasi sekolah lms, software cbt ujian sekolah, sistem informasi akademik, aplikasi pembayaran spp",
+			IsSaaS:          true,
+			SubdomainPattern: "{tenant}.schola.tstech.id",
+			BaseDomain:       "schola.tstech.id",
+			APISecretKey:     "sec_schola_live_89123891",
+		},
+		{
+			Slug:            "pos-resto-multi-branch",
+			Title:           "TsTech POS & Resto Multi-Branch Cloud",
+			Tagline:         "Sistem Kasir & Manajemen Restoran, Kafe, dan F&B Berbasis Cloud Terintegrasi Multi-Outlet",
+			Badge:           "SaaS & Ready Product",
+			Category:        "Point of Sale",
+			Icon:            "🍽️",
+			Thumbnail:       "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=800&auto=format&fit=crop&q=80",
+			Images:          `["https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=1000&auto=format&fit=crop&q=80","https://images.unsplash.com/photo-1556742049-0a67e55722c0?w=1000&auto=format&fit=crop&q=80","https://images.unsplash.com/photo-1508873696983-2df5703bc20d?w=1000&auto=format&fit=crop&q=80"]`,
+			Price:           3500000,
+			PriceDiscount:   4900000,
+			PriceType:       "one_time",
+			DemoURL:         "https://demo.restopos.tstech.id",
+			DocURL:          "https://docs.kotban.com/pos-resto",
+			Features:        "• **Kitchen Display System (KDS)**: Tiket pesanan otomatis terkirim langsung ke layar dapur realtime.\n• **Multi-Outlet Synchronization**: Kelola menu, harga, dan stok dari ratusan cabang dalam satu dashboard pusat.\n• **QR Table Ordering**: Pelanggan scan barcode di meja, pesan menu, dan bayar mandiri tanpa antre.\n• **Payment Gateway QRIS & VA**: Mendukung pembayaran tunai, QRIS Dinamis, GoPay, OVO, ShopeePay, dan Transfer Bank.\n• **Inventori Resep & HPP (COGS)**: Pengurangan stok bahan baku otomatis berdasarkan takaran menu terjual.\n• **Laporan Penjualan & Laba/Rugi**: Rekapitulasi omset harian, shift kasir, split bill, dan analisa menu terlaris.",
+			TechStack:       "Next.js 15, Go (Echo), PostgreSQL, TailwindCSS, WebSocket, Redis",
+			Overview:        "### Solusi Kasir Digital Modern untuk Pertumbuhan Bisnis F&B Anda\n\nTsTech POS & Resto dirancang khusus untuk memenuhi kebutuhan operasional restoran cepat saji, coffee shop, bakery, hingga fine dining dengan banyak cabang. Dengan arsitektur hybrid online-offline, transaksi tetap berjalan lancar meski koneksi internet terputus sesaat.\n\n### Keunggulan Utama:\n- **Tanpa Biaya Langganan Bulanan**: Dapatkan source code penuh dan deploy di server milik Anda sendiri (100% Hak Milik).\n- **Kecepatan Transaksi Tinggi**: UI didesain sangat intuitif untuk kasir, memproses pesanan dalam hitungan detik.\n- **Support Hardware Kasir Lengkap**: Kompatibel dengan printer thermal Bluetooth/USB, cash drawer, dan barcode scanner.",
+			IsFeatured:      true,
+			IsActive:        true,
+			SortOrder:       1,
+			MetaTitle:       "Software Kasir Restoran & Kafe Multi-Cabang | TsTech POS Resto",
+			MetaDescription: "Software POS dan manajemen resto berbasis cloud lengkap dengan KDS, QR Dine-In, stok bahan baku, dan integrasi QRIS.",
+			MetaKeywords:    "software kasir resto, aplikasi pos restoran, pos cloud cafe, aplikasi fnb multi cabang",
+			IsSaaS:          true,
+			SubdomainPattern: "{tenant}.restopos.tstech.id",
+			BaseDomain:       "restopos.tstech.id",
+			APISecretKey:     "sec_restopos_live_72918231",
+		},
+		{
+			Slug:            "klinik-emr-satusehat",
+			Title:           "TsTech Medika & Clinic EMR (SatuSehat Ready)",
+			Tagline:         "Aplikasi Rekam Medis Elektronik (RME) Standar Kemenkes, Antrean Pasien & Kasir Apotek",
+			Badge:           "Kemenkes SatuSehat Ready",
+			Category:        "Klinik & Medika",
+			Icon:            "🏥",
+			Thumbnail:       "https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=800&auto=format&fit=crop&q=80",
+			Images:          `["https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=1000&auto=format&fit=crop&q=80","https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?w=1000&auto=format&fit=crop&q=80"]`,
+			Price:           6500000,
+			PriceDiscount:   8900000,
+			PriceType:       "one_time",
+			DemoURL:         "https://demo.medika.tstech.id",
+			DocURL:          "https://docs.kotban.com/medika-emr",
+			Features:        "• **Standar SatuSehat Kemenkes**: Format data FHIR terstandarisasi siap sinkronisasi ke platform SatuSehat.\n• **Rekam Medis Elektronik (SOAP)**: Input diagnosa ICD-10, tindakan ICD-9-CM, odontogram gigi, dan riwayat alergi.\n• **Sistem Antrean Poliklinik & Display Suara**: Panggilan nomor antrean otomatis dengan audio dan monitor TV ruang tunggu.\n• **Manajemen Apotek & Stok Obat**: Pengurangan obat otomatis dari e-resep dokter, kartu stok, dan peringatan expired.\n• **Billing & Pembayaran Kasir**: Cetak nota pembayaran, kuitansi tindakan medis, dan integrasi pembayaran QRIS.",
+			TechStack:       "Next.js 15, Go (Echo), PostgreSQL, TailwindCSS",
+			Overview:        "### Digitalisasi Klinik Anda Sesuai Regulasi Permenkes No. 24 Tahun 2022\n\nTsTech Medika EMR membantu klinik pratama, klinik utama, dan tempat praktik mandiri dokter mengelola pendaftaran pasien, pencatatan rekam medis elektronik, antrean, hingga kasir apotek dengan cepat, akurat, dan aman.\n\n### Fitur Utama:\n- Enkripsi Data Medis Tingkat Tinggi\n- E-Prescription & Label Obat Otomatis\n- Manajemen Jadwal Praktik Dokter & Kuota Pasien",
+			IsFeatured:      true,
+			IsActive:        true,
+			SortOrder:       3,
+			MetaTitle:       "Software Rekam Medis Elektronik Klinik SatuSehat | TsTech Medika",
+			MetaDescription: "Software RME klinik terintegrasi SatuSehat Kemenkes, antrean poli, kasir apotek, dan manajemen jadwal dokter.",
+			MetaKeywords:    "software klinik satusehat, aplikasi rme klinik, rekam medis elektronik, software apotek klinik",
+			IsSaaS:          true,
+			SubdomainPattern: "{tenant}.medika.tstech.id",
+			BaseDomain:       "medika.tstech.id",
+			APISecretKey:     "sec_medika_live_38127391",
+		},
+		{
+			Slug:            "erp-core-enterprise",
+			Title:           "TsTech ERP Core Enterprise Edition",
+			Tagline:         "Software Manajemen Stok Multi-Gudang, Akuntansi, Purchasing, dan Distribusi Penjualan",
+			Badge:           "Enterprise Solution",
+			Category:        "ERP & Keuangan",
+			Icon:            "🏢",
+			Thumbnail:       "https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=800&auto=format&fit=crop&q=80",
+			Images:          `["https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=1000&auto=format&fit=crop&q=80","https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=1000&auto=format&fit=crop&q=80"]`,
+			Price:           9500000,
+			PriceDiscount:   14000000,
+			PriceType:       "one_time",
+			DemoURL:         "https://demo-erp.kotban.com",
+			DocURL:          "https://docs.kotban.com/erp-core",
+			Features:        "• **Multi-Warehouse & Bin Location**: Pelacakan stok realtime di berbagai gudang, nomor batch, dan expiry date.\n• **Akuntansi Standar PSAK**: Jurnal otomatis, buku besar, neraca saldo, laporan laba rugi, dan arus kas otomatis.\n• **Procurement & Purchase Approval**: Alur pengajuan PO bertingkat dengan validasi limit anggaran departemen.\n• **Sales Order & Invoicing**: Penerbitan penawaran harga, surat jalan, faktur pajak PPN 11%, dan kuitansi pelunasan.\n• **Role-Based Access Control (RBAC)**: Pembatasan hak akses detail per divisi (Gudang, Sales, Finance, Direksi).\n• **Audit Trail & Log Lengkap**: Rekam jejak seluruh aktivitas manipulasi data untuk mencegah fraud internal.",
+			TechStack:       "React, Go, PostgreSQL, Redis, Docker, TailwindCSS",
+			Overview:        "### Otomatisasi Alur Kerja Bisnis Menyeluruh Tanpa Batasan Lisensi User\n\nTsTech ERP Core Enterprise menjembatani divisi gudang, keuangan, pengadaan, dan penjualan ke dalam satu platform terpadu. Dibuat dengan clean architecture Go dan PostgreSQL berkinerja tinggi, sistem sanggup menangani jutaan baris transaksi tanpa lag.\n\n### Mengapa Memilih TsTech ERP?\n1. **Unlimited Users & Unlimited Data**: Tidak ada batasan jumlah staf atau jumlah cabang.\n2. **Customizable**: Mudah disesuaikan dengan SOP khusus perusahaan Anda.\n3. **Export Laporan Lengkap**: Ekspor Excel, PDF, dan API integrasi ke sistem pihak ketiga.",
+			IsFeatured:      true,
+			IsActive:        true,
+			SortOrder:       2,
+			MetaTitle:       "Software ERP Manajemen Stok & Akuntansi Perusahaan | TsTech ERP",
+			MetaDescription: "Software ERP custom Indonesia untuk manajemen pergudangan, keuangan PSAK, sales order, dan procurement tanpa biaya langganan bulanan.",
+			MetaKeywords:    "software erp indonesia, aplikasi stok gudang, software akuntansi enterprise, custom erp go",
 		},
 		{
 			Slug:            "b2b-wholesale-ecommerce",
@@ -996,7 +1088,253 @@ func seedProducts(db *gorm.DB) {
 	}
 
 	for _, p := range products {
-		db.Create(&p)
+		var existing model.Product
+		if err := db.Where("slug = ?", p.Slug).First(&existing).Error; err != nil {
+			db.Create(&p)
+		} else {
+			existing.IsSaaS = p.IsSaaS
+			existing.SubdomainPattern = p.SubdomainPattern
+			existing.BaseDomain = p.BaseDomain
+			if p.APISecretKey != "" && existing.APISecretKey == "" {
+				existing.APISecretKey = p.APISecretKey
+			}
+			db.Save(&existing)
+		}
 	}
-	log.Println("🛍️ Seeded default ready-to-sell products")
+
+	// Link SaaS plans to products by slug matching
+	var allProducts []model.Product
+	db.Find(&allProducts)
+	for _, prod := range allProducts {
+		if prod.IsSaaS {
+			var saasProd model.SaaSProduct
+			if err := db.Where("slug = ?", prod.Slug).First(&saasProd).Error; err == nil {
+				db.Model(&model.SaaSPlan{}).Where("saa_s_product_id = ?", saasProd.ID).Update("product_id", prod.ID)
+			}
+		}
+	}
+
+	log.Println("🛍️ Seeded and synchronized unified ready-to-sell and SaaS products")
 }
+
+func seedSaaSProducts(db *gorm.DB) {
+	var count int64
+	db.Model(&model.SaaSProduct{}).Count(&count)
+	if count > 0 {
+		return
+	}
+
+	saasItems := []struct {
+		Product model.SaaSProduct
+		Plans   []model.SaaSPlan
+	}{
+		{
+			Product: model.SaaSProduct{
+				Slug:             "schola",
+				Name:             "Schola LMS & Sistem Informasi Manajemen Sekolah",
+				Tagline:          "SaaS Manajemen Sekolah Terpadu: PPDB Online, Absensi RFID/WhatsApp, E-Rapor Kurikulum Merdeka, CBT Ujian & SPP Terintegrasi",
+				Category:         "Pendidikan & Sekolah",
+				Icon:             "🏫",
+				SubdomainPattern: "{tenant}.schola.tstech.id",
+				BaseDomain:       "schola.tstech.id",
+				DemoURL:          "https://demo.schola.tstech.id",
+				DocURL:           "https://docs.tstech.id/schola",
+				Thumbnail:        "https://images.unsplash.com/photo-1580582932707-520aed937b7b?w=800&auto=format&fit=crop&q=80",
+				Images:           `["https://images.unsplash.com/photo-1580582932707-520aed937b7b?w=1000&auto=format&fit=crop&q=80"]`,
+				Features:         "• **Subdomain Sekolah Instan**: Contoh: `smkn1.schola.tstech.id` langsung aktif otomatis.\n• **E-Rapor Kurikulum Merdeka & K13**: Cetak rapor format resmi Kemendikbudristek sekali klik.\n• **CBT (Computer Based Test)**: Ujian online anti-curang dengan browser lockdown dan bank soal fleksibel.\n• **Billing & Notifikasi Tagihan SPP WhatsApp**: Orang tua menerima slip rincian SPP dan bayar via QRIS/VA otomatis.\n• **Portal Guru, Siswa & Wali Murid**: Akses nilai, jadwal mengajar, materi LMS, dan absensi harian realtime.",
+				TechStack:        "Next.js 15, Go Fiber, PostgreSQL Multi-Tenancy, Redis, WebSocket",
+				Overview:         "### Solusi Digitalisasi Sekolah Modern Terlengkap\n\nSchola dirancang untuk mempermudah operasional sekolah SD, SMP, SMA, SMK hingga Pesantren dan Lembaga Kursus dengan sistem multi-tenant terisolasi yang aman dan cepat.",
+				IsActive:         true,
+				SortOrder:        1,
+			},
+			Plans: []model.SaaSPlan{
+				{
+					Name:         "Starter (Bulanan)",
+					Code:         "schola_starter_monthly",
+					Interval:     "monthly",
+					PriceMonthly: 350000,
+					PriceYearly:  3500000,
+					DiscountPct:  0,
+					Features:     `["Maksimal 300 Siswa Aktif","E-Rapor Kurikulum Merdeka","CBT Ujian Online (500 user concurrent)","Manajemen SPP & Kas Sekolah","Notifikasi WhatsApp Terintegrasi","Subdomain gratis namasekolah.schola.tstech.id"]`,
+					MaxUsers:     300,
+					MaxStorageGB: 10,
+					IsPopular:    false,
+					IsActive:     true,
+					SortOrder:    1,
+				},
+				{
+					Name:         "Professional (Tahunan - Hemat 2 Bulan)",
+					Code:         "schola_pro_yearly",
+					Interval:     "yearly",
+					PriceMonthly: 300000,
+					PriceYearly:  3000000,
+					DiscountPct:  15,
+					Features:     `["Maksimal 1.000 Siswa Aktif","Semua Fitur Starter","PPDB Online dengan Form Custom","Absensi RFID & Notifikasi WhatsApp Realtime","Prioritas Bantuan CS 24/7","Bisa pasang Custom Domain (lms.sekolahanda.sch.id)"]`,
+					MaxUsers:     1000,
+					MaxStorageGB: 50,
+					IsPopular:    true,
+					IsActive:     true,
+					SortOrder:    2,
+				},
+				{
+					Name:         "Enterprise / Kampus (Tahunan)",
+					Code:         "schola_enterprise_yearly",
+					Interval:     "yearly",
+					PriceMonthly: 750000,
+					PriceYearly:  7500000,
+					DiscountPct:  20,
+					Features:     `["Siswa Unlimited (Tak Terbatas)","Semua Fitur Professional","Server Dedicated Isolation","Integrasi Fingerprint & Gerbang Turnstile","Custom Modul & On-Premise Training","Garansi SLA 99.9% Uptime"]`,
+					MaxUsers:     0,
+					MaxStorageGB: 200,
+					IsPopular:    false,
+					IsActive:     true,
+					SortOrder:    3,
+				},
+			},
+		},
+		{
+			Product: model.SaaSProduct{
+				Slug:             "restopos",
+				Name:             "TsTech RestoPOS & Cloud Kitchen",
+				Tagline:          "SaaS Point of Sales Kasir Restoran, Kitchen Display System (KDS), Order Meja QR & Manajemen Stok Bahan Baku Realtime",
+				Category:         "FnB & Retail",
+				Icon:             "🍽️",
+				SubdomainPattern: "{tenant}.restopos.tstech.id",
+				BaseDomain:       "restopos.tstech.id",
+				DemoURL:          "https://demo.restopos.tstech.id",
+				DocURL:           "https://docs.tstech.id/restopos",
+				Thumbnail:        "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=800&auto=format&fit=crop&q=80",
+				Images:           `["https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=1000&auto=format&fit=crop&q=80"]`,
+				Features:         "• **Subdomain Kafe/Resto Instan**: Akses kasir dari `namaresto.restopos.tstech.id`.\n• **QR Menu & Self Order Meja**: Pelanggan scan QR meja, pilih menu, dan bayar mandiri.\n• **Kitchen Display Screen (KDS)**: Pesanan kasir langsung muncul di layar dapur realtime.\n• **HPP & Manajemen Resep Bahan Baku**: Potong stok bahan otomatis saat menu terjual.\n• **Support Printer Thermal Bluetooth & LAN**: Cetak struk kasir dan checker dapur tanpa jeda.",
+				TechStack:        "Next.js 15, Go, PostgreSQL, Redis Pub/Sub",
+				Overview:         "### Percepat Layanan dan Cegah Kebocoran Stok Restoran Anda\n\nRestoPOS menghadirkan automasi restoran kelas enterprise untuk pemilik kedai kopi, kafe modern, restoran cepat saji, hingga cloud kitchen multi-cabang.",
+				IsActive:         true,
+				SortOrder:        2,
+			},
+			Plans: []model.SaaSPlan{
+				{
+					Name:         "Single Outlet (Bulanan)",
+					Code:         "restopos_single_monthly",
+					Interval:     "monthly",
+					PriceMonthly: 199000,
+					PriceYearly:  1990000,
+					DiscountPct:  0,
+					Features:     `["1 Outlet / Cabang","Kasir Kasir POS Tablet/PC Tak Terbatas","Order QR Menu Meja","Laporan Penjualan & Laba Rugi Harian","Manajemen Inventori & Resep"]`,
+					MaxUsers:     10,
+					MaxStorageGB: 5,
+					IsPopular:    false,
+					IsActive:     true,
+					SortOrder:    1,
+				},
+				{
+					Name:         "Multi-Outlet Pro (Bulanan)",
+					Code:         "restopos_multi_monthly",
+					Interval:     "monthly",
+					PriceMonthly: 449000,
+					PriceYearly:  4490000,
+					DiscountPct:  15,
+					Features:     `["Hingga 3 Outlet Cabang","Semua Fitur Single Outlet","Kitchen Display System (KDS)","Transfer Stok Antar Cabang","Hak Akses Supervisor & Manajer"]`,
+					MaxUsers:     30,
+					MaxStorageGB: 20,
+					IsPopular:    true,
+					IsActive:     true,
+					SortOrder:    2,
+				},
+			},
+		},
+		{
+			Product: model.SaaSProduct{
+				Slug:             "medika",
+				Name:             "TsTech Medika EMR & Klinik Pintar",
+				Tagline:          "SaaS Rekam Medis Elektronik (RME) Standar SatuSehat Kemenkes RI, Antrean Online Pasien & Farmasi Apotek",
+				Category:         "Klinik & Kesehatan",
+				Icon:             "🏥",
+				SubdomainPattern: "{tenant}.medika.tstech.id",
+				BaseDomain:       "medika.tstech.id",
+				DemoURL:          "https://demo.medika.tstech.id",
+				DocURL:           "https://docs.tstech.id/medika",
+				Thumbnail:        "https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?w=800&auto=format&fit=crop&q=80",
+				Images:           `["https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?w=1000&auto=format&fit=crop&q=80"]`,
+				Features:         "• **Terintegrasi SATUSEHAT Kemenkes**: Kirim data resume medis RME sesuai regulasi Permenkes No. 24.\n• **Subdomain Khusus Klinik**: Akses aman via `namaklinik.medika.tstech.id`.\n• **Bridging BPJS PCare**: Pendaftaran peserta BPJS & entri tindakan langsung terhubung.\n• **Modul E-Resep & Manajemen Apotek**: Resep dokter langsung masuk ke bagian instalasi farmasi.\n• **Billing Rawat Jalan & Kasir Medis**: Pembayaran tindakan dokter, lab, dan obat terintegrasi.",
+				TechStack:        "Next.js, Go, PostgreSQL HIPAA Compliant Encrypted, Redis",
+				Overview:         "### Digitalisasi Praktik Dokter & Klinik Pratama Sesuai Standar Kemenkes\n\nMedika EMR mempermudah dokter, perawat, apoteker, dan staf administrasi mengelola klinik tanpa kertas dengan rekam medis terenkripsi standar internasional.",
+				IsActive:         true,
+				SortOrder:        3,
+			},
+			Plans: []model.SaaSPlan{
+				{
+					Name:         "Praktik Dokter Mandiri (Bulanan)",
+					Code:         "medika_doctor_monthly",
+					Interval:     "monthly",
+					PriceMonthly: 249000,
+					PriceYearly:  2490000,
+					DiscountPct:  0,
+					Features:     `["1 Dokter Praktik","RME Rekam Medis SOAP Standar Kemenkes","Integrasi SATUSEHAT","Riwayat Kunjungan Pasien & E-Resep","Cetak Surat Sakit & Rujukan"]`,
+					MaxUsers:     3,
+					MaxStorageGB: 10,
+					IsPopular:    false,
+					IsActive:     true,
+					SortOrder:    1,
+				},
+				{
+					Name:         "Klinik Pratama (Bulanan)",
+					Code:         "medika_klinik_monthly",
+					Interval:     "monthly",
+					PriceMonthly: 599000,
+					PriceYearly:  5990000,
+					DiscountPct:  15,
+					Features:     `["Hingga 5 Dokter & 10 Nakes","Semua Fitur Praktik Dokter","Antrean Online & Panggil Suara","Modul Kasir & Billing Pasien","Stok Obat & Laporan Farmasi Lengkap","Subdomain klinik dedicated"]`,
+					MaxUsers:     15,
+					MaxStorageGB: 50,
+					IsPopular:    true,
+					IsActive:     true,
+					SortOrder:    2,
+				},
+			},
+		},
+	}
+
+	for _, item := range saasItems {
+		prod := item.Product
+		if err := db.Create(&prod).Error; err == nil {
+			for _, plan := range item.Plans {
+				plan.SaaSProductID = prod.ID
+				db.Create(&plan)
+			}
+		}
+	}
+	log.Println("🚀 Seeded default SaaS Products & Subscription Plans")
+}
+
+func seedSampleSubscription(db *gorm.DB) {
+	var subCount int64
+	db.Model(&model.SaaSSubscription{}).Count(&subCount)
+	if subCount > 0 {
+		return
+	}
+
+	var scholaProd model.SaaSProduct
+	var scholaPlan model.SaaSPlan
+	if err := db.Where("slug = ?", "schola").First(&scholaProd).Error; err == nil {
+		_ = db.Where("saa_s_product_id = ?", scholaProd.ID).First(&scholaPlan)
+		now := time.Now()
+		demoSub := model.SaaSSubscription{
+			SubscriptionNumber: "SUB-DEMO-0001",
+			UserID:             2, // Admin TsTech
+			SaaSProductID:      scholaProd.ID,
+			SaaSPlanID:         scholaPlan.ID,
+			TenantName:         "SMK Negeri 1 Surabaya",
+			SubdomainSlug:      "smkn1",
+			FullSubdomain:      "smkn1.schola.tstech.id",
+			Status:             "active",
+			BillingCycle:       "yearly",
+			PriceAmount:        3000000,
+			StartDate:          now.Add(-30 * 24 * time.Hour),
+			EndDate:            now.Add(335 * 24 * time.Hour),
+			AutoRenew:          true,
+		}
+		db.Create(&demoSub)
+		log.Println("🏫 Seeded sample active subscription for smkn1.schola.tstech.id")
+	}
+}
+

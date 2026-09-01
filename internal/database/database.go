@@ -30,16 +30,27 @@ func Connect(cfg *config.Config) *gorm.DB {
 			Logger: logger.Default.LogMode(logLevel),
 		})
 
-		// Automatic fallback to SQLite in development mode if PostgreSQL connection fails
-		if err != nil && cfg.APIEnv == "development" {
-			log.Printf("⚠️ Could not connect to PostgreSQL (%v). Falling back to local SQLite database (tstech.db)...", err)
+		var pingErr error
+		if err == nil {
+			if sdb, sErr := db.DB(); sErr == nil {
+				pingErr = sdb.Ping()
+			}
+		}
+
+		// Fallback to SQLite if PostgreSQL fails
+		if err != nil || pingErr != nil {
+			failReason := err
+			if pingErr != nil {
+				failReason = pingErr
+			}
+			log.Printf("⚠️ Could not connect to PostgreSQL (%v). Falling back to local SQLite database (tstech.db)...", failReason)
 			db, err = gorm.Open(sqlite.Open("tstech.db"), &gorm.Config{
 				Logger: logger.Default.LogMode(logLevel),
 			})
 		}
 	}
 
-	if err != nil {
+	if err != nil || db == nil {
 		log.Fatalf("Failed to connect to database: %v", err)
 	}
 

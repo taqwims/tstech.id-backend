@@ -115,3 +115,63 @@ func (h *AuthHandler) Me(c echo.Context) error {
 
 	return response.Success(c, user)
 }
+
+// POST /api/v1/auth/firebase (Login with Firebase / Google)
+func (h *AuthHandler) FirebaseLogin(c echo.Context) error {
+	var req struct {
+		Email     string `json:"email"`
+		Name      string `json:"name"`
+		AvatarURL string `json:"avatar_url"`
+		Phone     string `json:"phone"`
+	}
+
+	if err := c.Bind(&req); err != nil {
+		return response.Error(c, http.StatusBadRequest, "Format payload tidak valid")
+	}
+
+	if req.Email == "" {
+		return response.Error(c, http.StatusBadRequest, "Email akun Google wajib disertakan")
+	}
+
+	user, tokens, err := h.authSvc.FirebaseLogin(req.Email, req.Name, req.AvatarURL, req.Phone)
+	if err != nil {
+		return response.Error(c, http.StatusUnauthorized, err.Error())
+	}
+
+	return response.SuccessWithMessage(c, map[string]interface{}{
+		"user":   user,
+		"tokens": tokens,
+	}, "Login Google berhasil")
+}
+
+// POST /api/v1/auth/sso/verify (Satellite SaaS SSO Verification)
+func (h *AuthHandler) VerifySSO(c echo.Context) error {
+	var req struct {
+		Token     string `json:"token"`
+		SecretKey string `json:"secret_key"`
+	}
+
+	if err := c.Bind(&req); err != nil {
+		return response.Error(c, http.StatusBadRequest, "Format payload tidak valid")
+	}
+
+	token := req.Token
+	if token == "" {
+		token = c.QueryParam("token")
+	}
+	if token == "" {
+		return response.Error(c, http.StatusBadRequest, "Parameter 'token' wajib disertakan")
+	}
+
+	secret := req.SecretKey
+	if secret == "" {
+		secret = c.Request().Header.Get("X-SaaS-Secret")
+	}
+
+	result, err := h.authSvc.VerifySSOToken(token, secret)
+	if err != nil {
+		return response.Error(c, http.StatusUnauthorized, err.Error())
+	}
+
+	return response.Success(c, result)
+}

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"regexp"
 	"strings"
+	"time"
 
 	"github.com/tstech/backend/internal/model"
 	"github.com/tstech/backend/internal/repository"
@@ -20,6 +21,9 @@ type ProductService interface {
 	ListAdmin(category string, search string) ([]model.Product, error)
 	ToggleStatus(id uint) (*model.Product, error)
 	ToggleFeatured(id uint) (*model.Product, error)
+	CreatePlan(productId uint, plan *model.SaaSPlan) (*model.SaaSPlan, error)
+	UpdatePlan(planId uint, plan *model.SaaSPlan) (*model.SaaSPlan, error)
+	DeletePlan(planId uint) error
 }
 
 type productService struct {
@@ -52,6 +56,19 @@ func (s *productService) Create(product *model.Product) error {
 	}
 	if product.PriceType == "" {
 		product.PriceType = "one_time"
+	}
+
+	// Default SaaS pattern if IsSaaS is true
+	if product.IsSaaS {
+		if product.BaseDomain == "" {
+			product.BaseDomain = fmt.Sprintf("%s.tstech.id", product.Slug)
+		}
+		if product.SubdomainPattern == "" {
+			product.SubdomainPattern = fmt.Sprintf("{tenant}.%s", product.BaseDomain)
+		}
+		if product.APISecretKey == "" {
+			product.APISecretKey = fmt.Sprintf("sec_%s_%s", product.Slug, generateRandomJTI()[:12])
+		}
 	}
 
 	return s.repo.Create(product)
@@ -100,11 +117,52 @@ func (s *productService) Update(id uint, input *model.Product) (*model.Product, 
 	prod.MetaDescription = input.MetaDescription
 	prod.MetaKeywords = input.MetaKeywords
 
+	// Unified SaaS fields
+	prod.IsSaaS = input.IsSaaS
+	prod.SubdomainPattern = input.SubdomainPattern
+	prod.BaseDomain = input.BaseDomain
+	prod.WebhookURL = input.WebhookURL
+	if input.APISecretKey != "" {
+		prod.APISecretKey = input.APISecretKey
+	} else if prod.IsSaaS && prod.APISecretKey == "" {
+		prod.APISecretKey = fmt.Sprintf("sec_%s_%s", prod.Slug, generateRandomJTI()[:12])
+	}
+
 	if err := s.repo.Update(prod); err != nil {
 		return nil, err
 	}
 
 	return prod, nil
+}
+
+func (s *productService) CreatePlan(productId uint, plan *model.SaaSPlan) (*model.SaaSPlan, error) {
+	prod, err := s.repo.FindByID(productId)
+	if err != nil {
+		return nil, errors.New("produk tidak ditemukan")
+	}
+
+	plan.ProductID = &prod.ID
+	plan.SaaSProductID = prod.ID
+	if plan.Code == "" {
+		plan.Code = fmt.Sprintf("%s_plan_%d", prod.Slug, time.Now().Unix()%1000)
+	}
+
+	if err := s.repo.CreatePlan(plan); err != nil {
+		return nil, err
+	}
+	return plan, nil
+}
+
+func (s *productService) UpdatePlan(planId uint, plan *model.SaaSPlan) (*model.SaaSPlan, error) {
+	plan.ID = planId
+	if err := s.repo.UpdatePlan(plan); err != nil {
+		return nil, err
+	}
+	return plan, nil
+}
+
+func (s *productService) DeletePlan(planId uint) error {
+	return s.repo.DeletePlan(planId)
 }
 
 func (s *productService) Delete(id uint) error {

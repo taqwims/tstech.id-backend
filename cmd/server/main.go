@@ -39,6 +39,7 @@ func main() {
 	categoryRepo := repository.NewCategoryRepo(db)
 	serviceRepo := repository.NewServiceRepo(db)
 	productRepo := repository.NewProductRepo(db)
+	saasRepo := repository.NewSaaSRepository(db)
 
 	// Initialize services
 	emailSvc := service.NewEmailService(cfg)
@@ -51,6 +52,7 @@ func main() {
 	articleSvc := service.NewArticleService(articleRepo)
 	serviceSvc := service.NewServiceService(serviceRepo)
 	productSvc := service.NewProductService(productRepo)
+	saasSvc := service.NewSaaSService(db, cfg, saasRepo, userRepo, paymentSvc)
 	projectSvc := service.NewProjectService(
 		db,
 		projectRepo,
@@ -88,6 +90,7 @@ func main() {
 		Category: handler.NewCategoryHandler(categoryRepo),
 		Service:  handler.NewServiceHandler(serviceSvc),
 		Product:  handler.NewProductHandler(productSvc),
+		SaaS:     handler.NewSaaSHandler(saasSvc, saasRepo, storageSvc),
 		AuthSvc:  authSvc,
 	}
 

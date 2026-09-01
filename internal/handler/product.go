@@ -237,3 +237,92 @@ func (h *ProductHandler) AdminToggleFeatured(c echo.Context) error {
 		"data":    updated,
 	})
 }
+
+// Admin: POST /api/admin/products/:id/plans
+func (h *ProductHandler) AdminCreatePlan(c echo.Context) error {
+	productId, err := strconv.ParseUint(c.Param("id"), 10, 32)
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]interface{}{
+			"success": false,
+			"message": "ID produk tidak valid",
+		})
+	}
+
+	var plan model.SaaSPlan
+	if err := c.Bind(&plan); err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]interface{}{
+			"success": false,
+			"message": "Format data tidak valid: " + err.Error(),
+		})
+	}
+
+	createdPlan, err := h.svc.CreatePlan(uint(productId), &plan)
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]interface{}{
+			"success": false,
+			"message": err.Error(),
+		})
+	}
+
+	return c.JSON(http.StatusCreated, map[string]interface{}{
+		"success": true,
+		"message": "Paket langganan berhasil dibuat",
+		"data":    createdPlan,
+	})
+}
+
+// Admin: PUT /api/admin/plans/:id
+func (h *ProductHandler) AdminUpdatePlan(c echo.Context) error {
+	planId, err := strconv.ParseUint(c.Param("id"), 10, 32)
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]interface{}{
+			"success": false,
+			"message": "ID plan tidak valid",
+		})
+	}
+
+	var plan model.SaaSPlan
+	if err := c.Bind(&plan); err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]interface{}{
+			"success": false,
+			"message": "Format data tidak valid: " + err.Error(),
+		})
+	}
+
+	updatedPlan, err := h.svc.UpdatePlan(uint(planId), &plan)
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]interface{}{
+			"success": false,
+			"message": err.Error(),
+		})
+	}
+
+	return c.JSON(http.StatusOK, map[string]interface{}{
+		"success": true,
+		"message": "Paket langganan berhasil diperbarui",
+		"data":    updatedPlan,
+	})
+}
+
+// Admin: DELETE /api/admin/plans/:id
+func (h *ProductHandler) AdminDeletePlan(c echo.Context) error {
+	planId, err := strconv.ParseUint(c.Param("id"), 10, 32)
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]interface{}{
+			"success": false,
+			"message": "ID plan tidak valid",
+		})
+	}
+
+	if err := h.svc.DeletePlan(uint(planId)); err != nil {
+		return c.JSON(http.StatusInternalServerError, map[string]interface{}{
+			"success": false,
+			"message": "Gagal menghapus paket langganan",
+		})
+	}
+
+	return c.JSON(http.StatusOK, map[string]interface{}{
+		"success": true,
+		"message": "Paket langganan berhasil dihapus",
+	})
+}

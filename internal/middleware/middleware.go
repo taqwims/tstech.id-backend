@@ -23,8 +23,9 @@ func CORS() echo.MiddlewareFunc {
 			if strings.HasSuffix(origin, ".vercel.app") {
 				return true, nil
 			}
-			// Allow known production domains
+			// Allow known production domains and all subdomains (*.tstech.id)
 			if origin == "https://tstech.id" || origin == "https://www.tstech.id" ||
+				strings.HasSuffix(origin, ".tstech.id") ||
 				origin == "https://kotban.com" || origin == "https://www.kotban.com" {
 				return true, nil
 			}
