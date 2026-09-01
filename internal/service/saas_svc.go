@@ -400,7 +400,7 @@ func (s *SaaSService) GenerateSSOToken(userID uint, subID uint) (string, error) 
 		"plan_name":           planName,
 		"max_users":           maxUsers,
 		"max_storage_gb":      maxStorageGB,
-		"exp":                 time.Now().Add(5 * time.Minute).Unix(), // 5 minutes valid window
+		"exp":                 time.Now().Add(24 * time.Hour).Unix(), // 24 hours valid window
 		"iat":                 time.Now().Unix(),
 		"jti":                 generateRandomJTI(),
 	}
