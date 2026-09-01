@@ -59,9 +59,15 @@ func (r *saasRepository) GetActiveProducts() ([]model.SaaSProduct, error) {
 
 func (r *saasRepository) GetProductBySlug(slug string) (*model.SaaSProduct, error) {
 	var product model.SaaSProduct
-	err := r.db.Preload("Plans", func(db *gorm.DB) *gorm.DB {
+	query := r.db.Preload("Plans", func(db *gorm.DB) *gorm.DB {
 		return db.Where("is_active = ?", true).Order("sort_order asc")
-	}).Where("slug = ?", slug).First(&product).Error
+	})
+	if slug == "school" || slug == "schola" {
+		query = query.Where("slug = ? OR slug = ?", "schola", "school")
+	} else {
+		query = query.Where("slug = ?", slug)
+	}
+	err := query.First(&product).Error
 	if err != nil {
 		return nil, err
 	}

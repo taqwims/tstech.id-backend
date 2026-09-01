@@ -47,6 +47,11 @@ func CORS() echo.MiddlewareFunc {
 			"X-Requested-With",
 			"Accept-Language",
 			"Cache-Control",
+			"X-SaaS-Secret",
+			"X-Tenant-Slug",
+			"X-Tenant-Domain",
+			"X-Tenant",
+			"X-Subdomain",
 		},
 		AllowCredentials: true,
 	})

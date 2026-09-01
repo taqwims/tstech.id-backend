@@ -306,7 +306,7 @@ func (s *SaaSService) GetUserSubscriptions(userID uint) ([]SaaSSubscriptionDTO, 
 		}
 
 		directURL := fmt.Sprintf("%s://%s", protocol, sub.FullSubdomain)
-		if s.cfg != nil && s.cfg.SaaSDevURLOverride != "" && (s.cfg.APIEnv == "development" || strings.Contains(s.cfg.SaaSBaseDomain, "localhost")) {
+		if s.cfg != nil && s.cfg.SaaSDevURLOverride != "" {
 			devTpl := strings.ReplaceAll(s.cfg.SaaSDevURLOverride, "{tenant}", sub.SubdomainSlug)
 			if sub.SaaSProduct != nil {
 				devTpl = strings.ReplaceAll(devTpl, "{product}", sub.SaaSProduct.Slug)
@@ -419,7 +419,7 @@ func (s *SaaSService) GenerateSSOToken(userID uint, subID uint) (string, error) 
 	}
 
 	redirectURL := fmt.Sprintf("%s://%s/auth/sso?token=%s", protocol, sub.FullSubdomain, signedToken)
-	if s.cfg != nil && s.cfg.SaaSDevURLOverride != "" && (s.cfg.APIEnv == "development" || strings.Contains(s.cfg.SaaSBaseDomain, "localhost")) {
+	if s.cfg != nil && s.cfg.SaaSDevURLOverride != "" {
 		devTpl := strings.ReplaceAll(s.cfg.SaaSDevURLOverride, "{tenant}", sub.SubdomainSlug)
 		if sub.SaaSProduct != nil {
 			devTpl = strings.ReplaceAll(devTpl, "{product}", sub.SaaSProduct.Slug)

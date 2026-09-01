@@ -210,7 +210,11 @@ func (s *AuthService) VerifySSOToken(tokenString, secretKey string) (*SSOVerifyR
 		if unvClaims, ok := unvToken.Claims.(jwt.MapClaims); ok {
 			if prodSlug, ok := unvClaims["product_slug"].(string); ok && prodSlug != "" {
 				var prod model.SaaSProduct
-				if err := s.userRepo.GetDB().Where("slug = ?", prodSlug).First(&prod).Error; err == nil && prod.APISecretKey != "" {
+				query := s.userRepo.GetDB().Where("slug = ?", prodSlug)
+				if prodSlug == "school" || prodSlug == "schola" {
+					query = s.userRepo.GetDB().Where("slug = ? OR slug = ?", "schola", "school")
+				}
+				if err := query.First(&prod).Error; err == nil && prod.APISecretKey != "" {
 					candidates = append(candidates, prod.APISecretKey)
 				}
 			}

@@ -164,7 +164,10 @@ func (c *Config) DSN() string {
 }
 
 func loadDotEnv() {
-	paths := []string{".env", "../.env", "../../.env"}
+	paths := []string{".env", ".env.dev", "env.dev", "../.env", "../../.env"}
+	if envFile := os.Getenv("ENV_FILE"); envFile != "" {
+		paths = append([]string{envFile}, paths...)
+	}
 	for _, path := range paths {
 		file, err := os.Open(path)
 		if err != nil {
