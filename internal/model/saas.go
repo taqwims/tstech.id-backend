@@ -43,16 +43,18 @@ type SaaSPlan struct {
 	Interval      string         `json:"interval" gorm:"size:30;default:'monthly'"`  // "monthly", "yearly", "lifetime"
 	PriceMonthly  float64        `json:"price_monthly" gorm:"default:0"`
 	PriceYearly   float64        `json:"price_yearly" gorm:"default:0"`
-	DiscountPct   int            `json:"discount_pct" gorm:"default:0"`
-	Features      string         `json:"features" gorm:"type:text"`                  // JSON list of bullet features
-	MaxUsers      int            `json:"max_users" gorm:"default:0"`                 // 0 = unlimited
-	MaxStorageGB  int            `json:"max_storage_gb" gorm:"default:5"`
-	IsPopular     bool           `json:"is_popular" gorm:"default:false"`
-	IsActive      bool           `json:"is_active" gorm:"default:true"`
-	SortOrder     int            `json:"sort_order" gorm:"default:0"`
-	CreatedAt     time.Time      `json:"created_at"`
-	UpdatedAt     time.Time      `json:"updated_at"`
-	DeletedAt     gorm.DeletedAt `json:"-" gorm:"index"`
+	DiscountPct    int            `json:"discount_pct" gorm:"default:0"`
+	Features       string         `json:"features" gorm:"type:text"`                  // JSON list of bullet features
+	FeatureModules string         `json:"feature_modules" gorm:"type:text"`          // JSON array of technical module slugs: ["billing","ppdb",...]
+	AllowedUnits   string         `json:"allowed_units" gorm:"type:text"`            // JSON array of allowed education units: ["sdit","mts","ma"]
+	MaxUsers       int            `json:"max_users" gorm:"default:0"`                 // 0 = unlimited
+	MaxStorageGB   int            `json:"max_storage_gb" gorm:"default:5"`
+	IsPopular      bool           `json:"is_popular" gorm:"default:false"`
+	IsActive       bool           `json:"is_active" gorm:"default:true"`
+	SortOrder      int            `json:"sort_order" gorm:"default:0"`
+	CreatedAt      time.Time      `json:"created_at"`
+	UpdatedAt      time.Time      `json:"updated_at"`
+	DeletedAt      gorm.DeletedAt `json:"-" gorm:"index"`
 }
 
 // SaaSSubscription represents a client's subscribed SaaS tenant/instance
@@ -70,6 +72,8 @@ type SaaSSubscription struct {
 	TenantName         string         `json:"tenant_name" gorm:"size:200;not null"`                      // e.g. "SMK Negeri 1 Surabaya"
 	SubdomainSlug      string         `json:"subdomain_slug" gorm:"size:100;index;not null"`             // e.g. "smkn1"
 	FullSubdomain      string         `json:"full_subdomain" gorm:"size:255;uniqueIndex;not null"`       // e.g. "smkn1.schola.tstech.id"
+	CustomModules      string         `json:"custom_modules" gorm:"type:text"`                           // JSON array override of active modules
+	ActiveUnits        string         `json:"active_units" gorm:"type:text"`                             // JSON array of active school units: ["sdit","mts"]
 	Status             string         `json:"status" gorm:"size:50;default:'active';index"`             // "trial", "active", "expiring_soon", "past_due", "expired", "suspended", "cancelled"
 	BillingCycle       string         `json:"billing_cycle" gorm:"size:30;default:'monthly'"`            // "monthly", "yearly"
 	PriceAmount        float64        `json:"price_amount" gorm:"default:0"`

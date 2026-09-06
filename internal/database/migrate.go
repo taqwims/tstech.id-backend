@@ -43,6 +43,7 @@ func Migrate(db *gorm.DB, cfg *config.Config) {
 	// Auto seed SaaS Products & Plans
 	seedSaaSProducts(db)
 	seedSampleSubscription(db)
+	syncDefaultPlanModules(db)
 
 	// Auto seed Products
 	seedProducts(db)
@@ -1337,4 +1338,23 @@ func seedSampleSubscription(db *gorm.DB) {
 		log.Println("🏫 Seeded sample active subscription for smkn1.schola.tstech.id")
 	}
 }
+
+func syncDefaultPlanModules(db *gorm.DB) {
+	// Schola Starter
+	db.Model(&model.SaaSPlan{}).Where("code LIKE ? AND (feature_modules IS NULL OR feature_modules = '')", "%starter%").Updates(map[string]interface{}{
+		"feature_modules": `["billing","student_obligations","cash_ledger","infaq","savings","activities","public_website","wa_gateway"]`,
+		"allowed_units":   `["sdit"]`,
+	})
+	// Schola Pro
+	db.Model(&model.SaaSPlan{}).Where("code LIKE ? AND (feature_modules IS NULL OR feature_modules = '')", "%pro%").Updates(map[string]interface{}{
+		"feature_modules": `["billing","student_obligations","cash_ledger","infaq","savings","activities","public_website","wa_gateway","midtrans","ppdb","rfid_attendance","elearning","bk"]`,
+		"allowed_units":   `["sdit","mts","ma"]`,
+	})
+	// Schola Enterprise
+	db.Model(&model.SaaSPlan{}).Where("code LIKE ? AND (feature_modules IS NULL OR feature_modules = '')", "%enterprise%").Updates(map[string]interface{}{
+		"feature_modules": `["billing","student_obligations","cash_ledger","infaq","savings","activities","public_website","wa_gateway","midtrans","ppdb","rfid_attendance","elearning","bk","payroll","rkas","assets","external_debts"]`,
+		"allowed_units":   `["sdit","mts","ma","tk","umum"]`,
+	})
+}
+
 

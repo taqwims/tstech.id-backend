@@ -277,10 +277,13 @@ func (h *SaaSHandler) AdminUpdateSubscription(c echo.Context) error {
 	}
 
 	var req struct {
-		Status       string `json:"status"`
-		AdminNotes   string `json:"admin_notes"`
-		CustomDomain string `json:"custom_domain"`
-		ExtendMonths int    `json:"extend_months"`
+		Status        string `json:"status"`
+		AdminNotes    string `json:"admin_notes"`
+		CustomDomain  string `json:"custom_domain"`
+		ExtendMonths  int    `json:"extend_months"`
+		CustomModules string `json:"custom_modules"`
+		ActiveUnits   string `json:"active_units"`
+		SaaSPlanID    uint   `json:"saas_plan_id"`
 	}
 
 	if err := c.Bind(&req); err != nil {
@@ -295,6 +298,15 @@ func (h *SaaSHandler) AdminUpdateSubscription(c echo.Context) error {
 	}
 	if req.CustomDomain != "" {
 		sub.CustomDomain = strings.TrimSpace(req.CustomDomain)
+	}
+	if req.CustomModules != "" {
+		sub.CustomModules = req.CustomModules
+	}
+	if req.ActiveUnits != "" {
+		sub.ActiveUnits = req.ActiveUnits
+	}
+	if req.SaaSPlanID != 0 {
+		sub.SaaSPlanID = req.SaaSPlanID
 	}
 	if req.ExtendMonths > 0 {
 		sub.EndDate = sub.EndDate.Add(time.Duration(req.ExtendMonths*30) * 24 * time.Hour)
@@ -320,6 +332,8 @@ func (h *SaaSHandler) AdminCreateSubscription(c echo.Context) error {
 		DurationMonth int     `json:"duration_months"`
 		PriceAmount   float64 `json:"price_amount"`
 		CustomDomain  string  `json:"custom_domain"`
+		CustomModules string  `json:"custom_modules"`
+		ActiveUnits   string  `json:"active_units"`
 		Status        string  `json:"status"` // "active", "trial"
 	}
 
@@ -368,6 +382,8 @@ func (h *SaaSHandler) AdminCreateSubscription(c echo.Context) error {
 		SubdomainSlug:      cleanSlug,
 		FullSubdomain:      fullDomain,
 		CustomDomain:       strings.TrimSpace(req.CustomDomain),
+		CustomModules:      req.CustomModules,
+		ActiveUnits:        req.ActiveUnits,
 		Status:             status,
 		BillingCycle:       req.BillingCycle,
 		PriceAmount:        req.PriceAmount,

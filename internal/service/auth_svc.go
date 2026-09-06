@@ -193,6 +193,8 @@ type SSOVerifyResult struct {
 	PlanName           string `json:"plan_name"`
 	MaxUsers           int    `json:"max_users"`
 	MaxStorageGB       int    `json:"max_storage_gb"`
+	FeatureModules     string `json:"feature_modules"`
+	ActiveUnits        string `json:"active_units"`
 	Issuer             string `json:"iss"`
 }
 
@@ -274,6 +276,8 @@ func (s *AuthService) VerifySSOToken(tokenString, secretKey string) (*SSOVerifyR
 	}
 	planCode, _ := claims["plan_code"].(string)
 	planName, _ := claims["plan_name"].(string)
+	featMod, _ := claims["feature_modules"].(string)
+	actUnits, _ := claims["active_units"].(string)
 	iss, _ := claims["iss"].(string)
 
 	var maxUsers int
@@ -298,6 +302,8 @@ func (s *AuthService) VerifySSOToken(tokenString, secretKey string) (*SSOVerifyR
 		PlanName:           planName,
 		MaxUsers:           maxUsers,
 		MaxStorageGB:       maxStorage,
+		FeatureModules:     featMod,
+		ActiveUnits:        actUnits,
 		Issuer:             iss,
 	}, nil
 }

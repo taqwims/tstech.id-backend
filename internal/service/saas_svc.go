@@ -72,12 +72,14 @@ type LicenseVerifyDTO struct {
 	PlanName      string    `json:"plan_name"`
 	MaxUsers      int       `json:"max_users"`
 	MaxStorageGB  int       `json:"max_storage_gb"`
-	Features      string    `json:"features"`
-	StartDate     time.Time `json:"start_date"`
-	EndDate       time.Time `json:"end_date"`
-	DaysRemaining int       `json:"days_remaining"`
-	OwnerEmail    string    `json:"owner_email,omitempty"`
-	Message       string    `json:"message"`
+	Features       string    `json:"features"`
+	FeatureModules string    `json:"feature_modules"`
+	ActiveUnits    string    `json:"active_units"`
+	StartDate      time.Time `json:"start_date"`
+	EndDate        time.Time `json:"end_date"`
+	DaysRemaining  int       `json:"days_remaining"`
+	OwnerEmail     string    `json:"owner_email,omitempty"`
+	Message        string    `json:"message"`
 }
 
 var reservedSubdomains = map[string]bool{
@@ -400,9 +402,21 @@ func (s *SaaSService) GenerateSSOToken(userID uint, subID uint) (string, error) 
 		"plan_name":           planName,
 		"max_users":           maxUsers,
 		"max_storage_gb":      maxStorageGB,
+		"feature_modules":     sub.CustomModules,
+		"active_units":        sub.ActiveUnits,
 		"exp":                 time.Now().Add(24 * time.Hour).Unix(), // 24 hours valid window
 		"iat":                 time.Now().Unix(),
 		"jti":                 generateRandomJTI(),
+	}
+
+	if claims["feature_modules"] == "" && sub.SaaSPlan != nil {
+		claims["feature_modules"] = sub.SaaSPlan.FeatureModules
+	}
+	if claims["active_units"] == "" && sub.SaaSPlan != nil {
+		claims["active_units"] = sub.SaaSPlan.AllowedUnits
+	}
+	if claims["active_units"] == "" {
+		claims["active_units"] = `["sdit","mts","ma"]`
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
@@ -646,6 +660,23 @@ func (s *SaaSService) VerifyLicense(domainOrSlug, secretKey string) (*LicenseVer
 		dto.MaxStorageGB = sub.SaaSPlan.MaxStorageGB
 		dto.Features = sub.SaaSPlan.Features
 	}
+
+	// Dynamic Feature Modules: subscription override OR plan default
+	if sub.CustomModules != "" {
+		dto.FeatureModules = sub.CustomModules
+	} else if sub.SaaSPlan != nil && sub.SaaSPlan.FeatureModules != "" {
+		dto.FeatureModules = sub.SaaSPlan.FeatureModules
+	}
+
+	// Dynamic Active Units: subscription override OR plan allowed units OR default
+	if sub.ActiveUnits != "" {
+		dto.ActiveUnits = sub.ActiveUnits
+	} else if sub.SaaSPlan != nil && sub.SaaSPlan.AllowedUnits != "" {
+		dto.ActiveUnits = sub.SaaSPlan.AllowedUnits
+	} else {
+		dto.ActiveUnits = `["sdit","mts","ma"]`
+	}
+
 	if sub.User != nil {
 		dto.OwnerEmail = sub.User.Email
 	}
