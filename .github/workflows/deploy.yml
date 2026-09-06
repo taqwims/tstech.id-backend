@@ -28,33 +28,49 @@ jobs:
           CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags="-s -w" -o server_bin ./cmd/server
           ls -lh server_bin
 
-      - name: Setup SSH Connection
-        env:
-          VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
-          VPS_HOST: ${{ secrets.VPS_HOST }}
-          VPS_PORT: ${{ secrets.VPS_PORT || '22' }}
-        run: |
-          mkdir -p ~/.ssh
-          echo "$VPS_SSH_KEY" > ~/.ssh/id_rsa
-          chmod 600 ~/.ssh/id_rsa
-          ssh-keyscan -p "$VPS_PORT" -H "$VPS_HOST" >> ~/.ssh/known_hosts
-
-      - name: Upload Binary & Restart Service on VPS
+      - name: Deploy to VPS via SSH
         env:
           VPS_HOST: ${{ secrets.VPS_HOST }}
           VPS_USER: ${{ secrets.VPS_USER || 'root' }}
           VPS_PORT: ${{ secrets.VPS_PORT || '22' }}
+          VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
           REMOTE_DIR: /var/www/kotban/backend
           SERVICE_NAME: backend.service
         run: |
+          # 1. Validasi Keberadaan GitHub Secrets
+          if [ -z "$VPS_HOST" ]; then
+            echo "::error::Secret 'VPS_HOST' belum diatur di GitHub Secrets!"
+            echo "Buka: Repo Settings -> Secrets and variables -> Actions -> New repository secret"
+            echo "Name: VPS_HOST | Value: IP VPS Anda"
+            exit 1
+          fi
+
+          if [ -z "$VPS_SSH_KEY" ]; then
+            echo "::error::Secret 'VPS_SSH_KEY' belum diatur di GitHub Secrets!"
+            echo "Buka: Repo Settings -> Secrets and variables -> Actions -> New repository secret"
+            echo "Name: VPS_SSH_KEY | Value: Private SSH Key Anda"
+            exit 1
+          fi
+
+          # 2. Setup SSH Key
+          mkdir -p ~/.ssh
+          echo "$VPS_SSH_KEY" | tr -d '\r' > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+
+          SSH_CMD="ssh -p $VPS_PORT -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
+          SCP_CMD="scp -P $VPS_PORT -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
+
+          # 3. Pastikan direktori remote ada
           echo "📦 Memastikan direktori target ada di VPS..."
-          ssh -p "$VPS_PORT" "$VPS_USER@$VPS_HOST" "mkdir -p $REMOTE_DIR"
+          $SSH_CMD "$VPS_USER@$VPS_HOST" "mkdir -p $REMOTE_DIR"
 
-          echo "🚀 Mengupload binary baru ke VPS..."
-          scp -P "$VPS_PORT" server_bin "$VPS_USER@$VPS_HOST:$REMOTE_DIR/server_bin.new"
+          # 4. Upload binary baru
+          echo "🚀 Mengupload server_bin ke VPS..."
+          $SCP_CMD server_bin "$VPS_USER@$VPS_HOST:$REMOTE_DIR/server_bin.new"
 
+          # 5. Ganti binary dan restart service
           echo "🔄 Memperbarui binary dan me-restart service..."
-          ssh -p "$VPS_PORT" "$VPS_USER@$VPS_HOST" bash -c "'
+          $SSH_CMD "$VPS_USER@$VPS_HOST" bash -c "'
             set -e
             cd $REMOTE_DIR
             mv -f server_bin.new server_bin
@@ -69,12 +85,7 @@ jobs:
             systemctl status $SERVICE_NAME --no-pager
           '"
 
-      - name: Service Health Check
-        env:
-          VPS_HOST: ${{ secrets.VPS_HOST }}
-          VPS_USER: ${{ secrets.VPS_USER || 'root' }}
-          VPS_PORT: ${{ secrets.VPS_PORT || '22' }}
-        run: |
+          # 6. Validasi status service
           echo "🔍 Memeriksa status kesehatan service pasca deploy..."
           sleep 3
-          ssh -p "$VPS_PORT" "$VPS_USER@$VPS_HOST" "systemctl is-active --quiet backend.service && echo '🎉 TsTech Backend berhasil berjalan di VPS!' || (echo '❌ Service gagal berjalan!' && exit 1)"
+          $SSH_CMD "$VPS_USER@$VPS_HOST" "systemctl is-active --quiet $SERVICE_NAME && echo '🎉 TsTech Backend berhasil berjalan di VPS!' || (echo '❌ Service gagal berjalan!' && exit 1)"
