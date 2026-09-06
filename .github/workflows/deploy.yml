@@ -1,0 +1,80 @@
+name: Build & Deploy Backend to VPS
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  build-and-deploy:
+    name: Build & Deploy TsTech Backend
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: 'go.mod'
+          cache: true
+          cache-dependency-path: 'go.sum'
+
+      - name: Compile Backend for Linux AMD64
+        run: |
+          echo "🔨 Mengompilasi Go Binary untuk Linux AMD64..."
+          CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags="-s -w" -o server_bin ./cmd/server
+          ls -lh server_bin
+
+      - name: Setup SSH Connection
+        env:
+          VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_PORT: ${{ secrets.VPS_PORT || '22' }}
+        run: |
+          mkdir -p ~/.ssh
+          echo "$VPS_SSH_KEY" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -p "$VPS_PORT" -H "$VPS_HOST" >> ~/.ssh/known_hosts
+
+      - name: Upload Binary & Restart Service on VPS
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_USER: ${{ secrets.VPS_USER || 'root' }}
+          VPS_PORT: ${{ secrets.VPS_PORT || '22' }}
+          REMOTE_DIR: /var/www/kotban/backend
+          SERVICE_NAME: backend.service
+        run: |
+          echo "📦 Memastikan direktori target ada di VPS..."
+          ssh -p "$VPS_PORT" "$VPS_USER@$VPS_HOST" "mkdir -p $REMOTE_DIR"
+
+          echo "🚀 Mengupload binary baru ke VPS..."
+          scp -P "$VPS_PORT" server_bin "$VPS_USER@$VPS_HOST:$REMOTE_DIR/server_bin.new"
+
+          echo "🔄 Memperbarui binary dan me-restart service..."
+          ssh -p "$VPS_PORT" "$VPS_USER@$VPS_HOST" bash -c "'
+            set -e
+            cd $REMOTE_DIR
+            mv -f server_bin.new server_bin
+            chmod +x server_bin
+            if systemctl is-active --quiet $SERVICE_NAME; then
+              systemctl restart $SERVICE_NAME
+              echo \"✅ Service $SERVICE_NAME berhasil di-restart!\"
+            else
+              echo \"⚠️ Service $SERVICE_NAME belum aktif, mencoba menjalankan...\"
+              systemctl start $SERVICE_NAME || true
+            fi
+            systemctl status $SERVICE_NAME --no-pager
+          '"
+
+      - name: Service Health Check
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_USER: ${{ secrets.VPS_USER || 'root' }}
+          VPS_PORT: ${{ secrets.VPS_PORT || '22' }}
+        run: |
+          echo "🔍 Memeriksa status kesehatan service pasca deploy..."
+          sleep 3
+          ssh -p "$VPS_PORT" "$VPS_USER@$VPS_HOST" "systemctl is-active --quiet backend.service && echo '🎉 TsTech Backend berhasil berjalan di VPS!' || (echo '❌ Service gagal berjalan!' && exit 1)"
