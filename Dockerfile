@@ -14,3 +14,4 @@ COPY --from=builder /server .
 ENV TZ=Asia/Jakarta
 EXPOSE 8080
 CMD ["./server"]
+
