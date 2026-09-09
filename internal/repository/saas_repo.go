@@ -10,6 +10,7 @@ import (
 type SaaSRepository interface {
 	// SaaS Products & Plans
 	GetActiveProducts() ([]model.SaaSProduct, error)
+	GetFeaturedProducts() ([]model.SaaSProduct, error)
 	GetProductBySlug(slug string) (*model.SaaSProduct, error)
 	GetProductByID(id uint) (*model.SaaSProduct, error)
 	GetPlanByID(id uint) (*model.SaaSPlan, error)
@@ -54,6 +55,14 @@ func (r *saasRepository) GetActiveProducts() ([]model.SaaSProduct, error) {
 	err := r.db.Preload("Plans", func(db *gorm.DB) *gorm.DB {
 		return db.Where("is_active = ?", true).Order("sort_order asc")
 	}).Where("is_active = ?", true).Order("sort_order asc").Find(&products).Error
+	return products, err
+}
+
+func (r *saasRepository) GetFeaturedProducts() ([]model.SaaSProduct, error) {
+	var products []model.SaaSProduct
+	err := r.db.Preload("Plans", func(db *gorm.DB) *gorm.DB {
+		return db.Where("is_active = ?", true).Order("sort_order asc")
+	}).Where("is_active = ? AND is_featured = ?", true, true).Order("sort_order asc, id asc").Find(&products).Error
 	return products, err
 }
 

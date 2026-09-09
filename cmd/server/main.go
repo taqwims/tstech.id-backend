@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"log"
 
 	"github.com/tstech/backend/internal/config"
@@ -40,6 +41,7 @@ func main() {
 	serviceRepo := repository.NewServiceRepo(db)
 	productRepo := repository.NewProductRepo(db)
 	saasRepo := repository.NewSaaSRepository(db)
+	auditRepo := repository.NewAuditRepo(db)
 
 	// Initialize services
 	emailSvc := service.NewEmailService(cfg)
@@ -53,6 +55,8 @@ func main() {
 	serviceSvc := service.NewServiceService(serviceRepo)
 	productSvc := service.NewProductService(productRepo)
 	saasSvc := service.NewSaaSService(db, cfg, saasRepo, userRepo, paymentSvc)
+	auditSvc := service.NewAuditService(auditRepo)
+	geminiBlogSvc := service.NewGeminiBlogService(db, articleSvc, auditSvc, cfg)
 	projectSvc := service.NewProjectService(
 		db,
 		projectRepo,
@@ -63,15 +67,18 @@ func main() {
 		orderRepo,
 	)
 
+	// Start background AI blog scheduler worker
+	go geminiBlogSvc.StartScheduler(context.Background())
+
 	// Initialize handlers
 	handlers := &router.Handlers{
 		Consultation: handler.NewConsultationHandler(consultationSvc, emailSvc),
 		Order:        handler.NewOrderHandler(orderSvc, paymentSvc, emailSvc, userRepo),
-		Payment:      handler.NewPaymentHandler(paymentSvc, storageSvc),
+		Payment:      handler.NewPaymentHandler(paymentSvc, storageSvc, auditSvc),
 		Portfolio:    handler.NewPortfolioHandler(portfolioRepo),
 		Testimonial:  handler.NewTestimonialHandler(testimonialRepo),
 		Contact:      handler.NewContactHandler(contactRepo, emailSvc),
-		Auth:         handler.NewAuthHandler(authSvc),
+		Auth:         handler.NewAuthHandler(authSvc, auditSvc),
 		Admin: handler.NewAdminHandler(
 			db,
 			projectSvc,
@@ -83,6 +90,8 @@ func main() {
 			testimonialRepo,
 			consultationRepo,
 			contactRepo,
+			auditSvc,
+			geminiBlogSvc,
 		),
 		Client:   handler.NewClientHandler(projectSvc, userRepo, storageSvc, paymentSvc),
 		Content:  handler.NewContentHandler(contentSvc),

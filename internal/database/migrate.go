@@ -34,11 +34,16 @@ func Migrate(db *gorm.DB, cfg *config.Config) {
 		&model.SaaSPlan{},
 		&model.SaaSSubscription{},
 		&model.Invoice{},
+		&model.AuditLog{},
+		&model.AIBlogSetting{},
 	)
 	if err != nil {
 		log.Fatalf("Failed to run migrations: %v", err)
 	}
 	log.Println("✅ Database migrations completed")
+
+	// Ensure is_featured is true for SaaS products if null
+	db.Exec("UPDATE saas_products SET is_featured = true WHERE is_featured IS NULL")
 
 	// Auto seed SaaS Products & Plans
 	seedSaaSProducts(db)
@@ -68,6 +73,33 @@ func Migrate(db *gorm.DB, cfg *config.Config) {
 
 	// Auto seed Default SEO Articles
 	seedArticles(db)
+
+	// Auto seed Gemini AI Blog Setting
+	seedAIBlogSetting(db)
+}
+
+func seedAIBlogSetting(db *gorm.DB) {
+	var count int64
+	db.Model(&model.AIBlogSetting{}).Count(&count)
+	if count == 0 {
+		setting := model.AIBlogSetting{
+			IsEnabled:      false,
+			GeminiModel:    "gemini-3-flash-preview",
+			IntervalHours:  24,
+			TargetCategory: "Teknologi",
+			DefaultStatus:  "published",
+			AutoSEO:        true,
+			LastRunStatus:  "idle",
+			TotalGenerated: 0,
+		}
+		db.Create(&setting)
+		log.Println("🤖 Seeded default Gemini AI Blog settings (gemini-3-flash-preview)")
+	} else {
+		// Auto upgrade any legacy gemini-1.5, 2.0, or 2.5 models in database to gemini-3-flash-preview
+		db.Model(&model.AIBlogSetting{}).
+			Where("gemini_model LIKE ? OR gemini_model LIKE ? OR gemini_model LIKE ? OR gemini_model = '' OR gemini_model IS NULL", "%1.5%", "%2.0%", "%2.5%").
+			Update("gemini_model", "gemini-3-flash-preview")
+	}
 }
 
 func seedAdmin(db *gorm.DB, cfg *config.Config) {

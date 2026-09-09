@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/tstech/backend/internal/service"
@@ -9,11 +10,12 @@ import (
 )
 
 type AuthHandler struct {
-	authSvc *service.AuthService
+	authSvc  *service.AuthService
+	auditSvc service.AuditService
 }
 
-func NewAuthHandler(authSvc *service.AuthService) *AuthHandler {
-	return &AuthHandler{authSvc: authSvc}
+func NewAuthHandler(authSvc *service.AuthService, auditSvc service.AuditService) *AuthHandler {
+	return &AuthHandler{authSvc: authSvc, auditSvc: auditSvc}
 }
 
 type RegisterRequest struct {
@@ -56,6 +58,10 @@ func (h *AuthHandler) Register(c echo.Context) error {
 		return response.Error(c, http.StatusBadRequest, err.Error())
 	}
 
+	if h.auditSvc != nil {
+		h.auditSvc.Log(c, "AUTH_REGISTER", "user", fmt.Sprintf("%d", user.ID), fmt.Sprintf("Pendaftaran pengguna baru: %s (%s)", user.Name, user.Email), map[string]interface{}{"role": user.Role, "company": user.CompanyName})
+	}
+
 	_, tokens, err := h.authSvc.Login(req.Email, req.Password)
 	if err != nil {
 		return response.Created(c, map[string]interface{}{
@@ -77,7 +83,14 @@ func (h *AuthHandler) Login(c echo.Context) error {
 
 	user, tokens, err := h.authSvc.Login(req.Email, req.Password)
 	if err != nil {
+		if h.auditSvc != nil {
+			h.auditSvc.Log(c, "AUTH_LOGIN_FAILED", "user", "", fmt.Sprintf("Gagal login untuk email: %s", req.Email), map[string]interface{}{"email": req.Email})
+		}
 		return response.Error(c, http.StatusUnauthorized, err.Error())
+	}
+
+	if h.auditSvc != nil {
+		h.auditSvc.Log(c, "AUTH_LOGIN", "user", fmt.Sprintf("%d", user.ID), fmt.Sprintf("Login berhasil: %s (%s)", user.Name, user.Email), map[string]interface{}{"role": user.Role})
 	}
 
 	return response.SuccessWithMessage(c, map[string]interface{}{

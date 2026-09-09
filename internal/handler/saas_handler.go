@@ -34,7 +34,18 @@ func NewSaaSHandler(
 
 // GET /api/v1/saas/products (Public)
 func (h *SaaSHandler) GetProducts(c echo.Context) error {
-	products, err := h.saasSvc.GetActiveProducts()
+	var products []model.SaaSProduct
+	var err error
+
+	featuredParam := c.QueryParam("featured")
+	landingParam := c.QueryParam("landing")
+
+	if featuredParam == "true" || landingParam == "true" {
+		products, err = h.saasSvc.GetFeaturedProducts()
+	} else {
+		products, err = h.saasSvc.GetActiveProducts()
+	}
+
 	if err != nil {
 		return response.Error(c, http.StatusInternalServerError, "Gagal memuat katalog SaaS")
 	}
@@ -484,6 +495,7 @@ func (h *SaaSHandler) AdminUpdateProduct(c echo.Context) error {
 		WebhookURL       string `json:"webhook_url"`
 		APISecretKey     string `json:"api_secret_key"`
 		IsActive         *bool  `json:"is_active"`
+		IsFeatured       *bool  `json:"is_featured"`
 		SortOrder        int    `json:"sort_order"`
 	}
 
@@ -536,6 +548,9 @@ func (h *SaaSHandler) AdminUpdateProduct(c echo.Context) error {
 	if req.IsActive != nil {
 		prod.IsActive = *req.IsActive
 	}
+	if req.IsFeatured != nil {
+		prod.IsFeatured = *req.IsFeatured
+	}
 	prod.SortOrder = req.SortOrder
 
 	if err := h.saasRepo.UpdateProduct(prod); err != nil {
@@ -543,6 +558,30 @@ func (h *SaaSHandler) AdminUpdateProduct(c echo.Context) error {
 	}
 
 	return response.Success(c, prod)
+}
+
+// PUT /api/v1/admin/saas/products/:id/toggle-featured
+func (h *SaaSHandler) AdminToggleFeatured(c echo.Context) error {
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		return response.Error(c, http.StatusBadRequest, "ID tidak valid")
+	}
+	prod, err := h.saasRepo.GetProductByID(uint(id))
+	if err != nil {
+		return response.Error(c, http.StatusNotFound, "Produk SaaS tidak ditemukan")
+	}
+
+	prod.IsFeatured = !prod.IsFeatured
+	if err := h.saasRepo.UpdateProduct(prod); err != nil {
+		return response.Error(c, http.StatusInternalServerError, "Gagal mengubah status landing page produk")
+	}
+
+	statusMsg := "Produk berhasil ditampilkan di Landing Page"
+	if !prod.IsFeatured {
+		statusMsg = "Produk berhasil disembunyikan dari Landing Page"
+	}
+
+	return response.SuccessWithMessage(c, prod, statusMsg)
 }
 
 // DELETE /api/v1/admin/saas/products/:id

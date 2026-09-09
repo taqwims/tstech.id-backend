@@ -32,8 +32,15 @@ func Setup(e *echo.Echo, h *Handlers) {
 	e.Use(middleware.Logger())
 	e.Use(middleware.CORS())
 
-	// Static uploads directory
-	e.Static("/uploads", "./uploads")
+	// Static uploads directory with caching headers
+	uploadsGroup := e.Group("/uploads")
+	uploadsGroup.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
+		return func(c echo.Context) error {
+			c.Response().Header().Set("Cache-Control", "public, max-age=2592000, immutable")
+			return next(c)
+		}
+	})
+	uploadsGroup.Static("", "./uploads")
 
 	// API group
 	api := e.Group("/api")
@@ -170,6 +177,7 @@ func Setup(e *echo.Echo, h *Handlers) {
 	// Quotation
 	admin.POST("/projects/:id/quotation", h.Admin.SaveQuotation)
 	admin.PUT("/quotations/:id/send", h.Admin.SendQuotation)
+	admin.PUT("/quotations/:id/bypass", h.Admin.ApproveQuotationBypass)
 
 	// Orders & Conversion
 	admin.GET("/orders", h.Admin.ListOrders)
@@ -246,6 +254,7 @@ func Setup(e *echo.Echo, h *Handlers) {
 	admin.GET("/saas/products", h.SaaS.AdminGetAllProducts)
 	admin.POST("/saas/products", h.SaaS.AdminCreateProduct)
 	admin.PUT("/saas/products/:id", h.SaaS.AdminUpdateProduct)
+	admin.PUT("/saas/products/:id/toggle-featured", h.SaaS.AdminToggleFeatured)
 	admin.DELETE("/saas/products/:id", h.SaaS.AdminDeleteProduct)
 	admin.POST("/saas/products/:id/plans", h.SaaS.AdminCreatePlan)
 	admin.PUT("/saas/plans/:id", h.SaaS.AdminUpdatePlan)
@@ -259,4 +268,12 @@ func Setup(e *echo.Echo, h *Handlers) {
 
 	// File Upload
 	admin.POST("/upload", h.Admin.UploadFile)
+
+	// Audit Logs
+	admin.GET("/audit-logs", h.Admin.ListAuditLogs)
+
+	// AI Blog Automation (Gemini)
+	admin.GET("/ai-blog/settings", h.Admin.GetAIBlogSettings)
+	admin.PUT("/ai-blog/settings", h.Admin.UpdateAIBlogSettings)
+	admin.POST("/ai-blog/generate-now", h.Admin.GenerateAIBlogNow)
 }

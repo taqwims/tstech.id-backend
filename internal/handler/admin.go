@@ -27,6 +27,8 @@ type AdminHandler struct {
 	testimonialRepo  *repository.TestimonialRepo
 	consultationRepo *repository.ConsultationRepo
 	contactRepo      *repository.ContactRepo
+	auditSvc         service.AuditService
+	aiBlogSvc        service.GeminiBlogService
 }
 
 func NewAdminHandler(
@@ -40,6 +42,8 @@ func NewAdminHandler(
 	testimonialRepo *repository.TestimonialRepo,
 	consultationRepo *repository.ConsultationRepo,
 	contactRepo *repository.ContactRepo,
+	auditSvc service.AuditService,
+	aiBlogSvc service.GeminiBlogService,
 ) *AdminHandler {
 	return &AdminHandler{
 		db:               db,
@@ -52,6 +56,8 @@ func NewAdminHandler(
 		testimonialRepo:  testimonialRepo,
 		consultationRepo: consultationRepo,
 		contactRepo:      contactRepo,
+		auditSvc:         auditSvc,
+		aiBlogSvc:        aiBlogSvc,
 	}
 }
 
@@ -216,6 +222,8 @@ func (h *AdminHandler) UpdateProjectStatus(c echo.Context) error {
 		return response.Error(c, http.StatusInternalServerError, "Gagal memperbarui status proyek")
 	}
 
+	h.auditSvc.Log(c, "PROJECT_UPDATE_STATUS", "project", fmt.Sprintf("%d", id), fmt.Sprintf("Admin mengubah status proyek #%d menjadi '%s'", id, req.Status), req)
+
 	return response.SuccessWithMessage(c, nil, "Status proyek berhasil diperbarui")
 }
 
@@ -232,6 +240,8 @@ func (h *AdminHandler) UpdateProjectProgress(c echo.Context) error {
 	if err := h.projectSvc.UpdateProjectProgress(uint(id), req.Progress); err != nil {
 		return response.Error(c, http.StatusInternalServerError, "Gagal memperbarui progress proyek")
 	}
+
+	h.auditSvc.Log(c, "PROJECT_UPDATE_PROGRESS", "project", fmt.Sprintf("%d", id), fmt.Sprintf("Admin mengubah progress proyek #%d menjadi %d%%", id, req.Progress), req)
 
 	return response.SuccessWithMessage(c, nil, "Progress proyek berhasil diperbarui")
 }
@@ -304,19 +314,39 @@ func (h *AdminHandler) DeleteMilestone(c echo.Context) error {
 func (h *AdminHandler) SaveQuotation(c echo.Context) error {
 	projectID, _ := strconv.Atoi(c.Param("id"))
 	var req struct {
-		Items         interface{} `json:"items"`
-		TotalAmount   int64       `json:"total_amount"`
-		EstimatedDays int         `json:"estimated_days"`
-		ValidUntil    *time.Time  `json:"valid_until"`
+		Items               interface{} `json:"items"`
+		TotalAmount         int64       `json:"total_amount"`
+		EstimatedDays       int         `json:"estimated_days"`
+		ValidUntil          *time.Time  `json:"valid_until"`
+		ProposalURL         string      `json:"proposal_url"`
+		ProposalFileName    string      `json:"proposal_file_name"`
+		HasMaintenance      bool        `json:"has_maintenance"`
+		MaintenanceDuration string      `json:"maintenance_duration"`
+		MaintenancePrice    int64       `json:"maintenance_price"`
 	}
 	if err := c.Bind(&req); err != nil {
 		return response.Error(c, http.StatusBadRequest, "Format input tidak valid")
 	}
 
-	q, err := h.projectSvc.SaveQuotation(uint(projectID), req.Items, req.TotalAmount, req.EstimatedDays, req.ValidUntil)
+	q, err := h.projectSvc.SaveQuotation(
+		uint(projectID),
+		req.Items,
+		req.TotalAmount,
+		req.EstimatedDays,
+		req.ValidUntil,
+		service.QuotationExtra{
+			ProposalURL:         req.ProposalURL,
+			ProposalFileName:    req.ProposalFileName,
+			HasMaintenance:      req.HasMaintenance,
+			MaintenanceDuration: req.MaintenanceDuration,
+			MaintenancePrice:    req.MaintenancePrice,
+		},
+	)
 	if err != nil {
 		return response.Error(c, http.StatusInternalServerError, "Gagal menyimpan penawaran")
 	}
+
+	h.auditSvc.Log(c, "QUOTATION_SAVE", "quotation", fmt.Sprintf("%d", q.ID), fmt.Sprintf("Admin menyimpan penawaran proyek #%d senilai Rp %d (Maintenance: %v)", projectID, req.TotalAmount, req.HasMaintenance), req)
 
 	return response.SuccessWithMessage(c, q, "Penawaran harga berhasil disimpan")
 }
@@ -328,7 +358,26 @@ func (h *AdminHandler) SendQuotation(c echo.Context) error {
 		return response.Error(c, http.StatusInternalServerError, "Gagal mengirim penawaran")
 	}
 
+	h.auditSvc.Log(c, "QUOTATION_SEND", "quotation", fmt.Sprintf("%d", id), fmt.Sprintf("Admin mengirim surat penawaran #%d ke klien", id), nil)
+
 	return response.SuccessWithMessage(c, nil, "Penawaran berhasil dikirim ke klien")
+}
+
+// PUT /api/admin/quotations/:id/bypass
+func (h *AdminHandler) ApproveQuotationBypass(c echo.Context) error {
+	id, _ := strconv.Atoi(c.Param("id"))
+	adminName, _ := c.Get("user_name").(string)
+	if adminName == "" {
+		adminName = "Administrator TsTech"
+	}
+
+	if err := h.projectSvc.BypassApproveQuotation(uint(id), adminName); err != nil {
+		return response.Error(c, http.StatusInternalServerError, "Gagal menyetujui penawaran: "+err.Error())
+	}
+
+	h.auditSvc.Log(c, "QUOTATION_BYPASS_APPROVE", "quotation", fmt.Sprintf("%d", id), fmt.Sprintf("Admin (%s) menyetujui langsung penawaran #%d via bypass KAK", adminName, id), nil)
+
+	return response.SuccessWithMessage(c, nil, "Penawaran berhasil disetujui langsung oleh Admin (Bypass)!")
 }
 
 // GET /api/admin/orders
@@ -353,6 +402,8 @@ func (h *AdminHandler) UpdateOrderStatus(c echo.Context) error {
 	if err := h.db.Model(&model.Order{}).Where("id = ?", id).Update("status", req.Status).Error; err != nil {
 		return response.Error(c, http.StatusInternalServerError, "Gagal memperbarui status pesanan")
 	}
+
+	h.auditSvc.Log(c, "ORDER_UPDATE_STATUS", "order", fmt.Sprintf("%d", id), fmt.Sprintf("Admin memperbarui status pesanan #%d menjadi '%s'", id, req.Status), req)
 
 	return response.SuccessWithMessage(c, nil, "Status pesanan berhasil diperbarui")
 }
@@ -455,6 +506,8 @@ func (h *AdminHandler) UpdateContent(c echo.Context) error {
 	if err := h.contentSvc.BatchUpdate(items); err != nil {
 		return response.Error(c, http.StatusInternalServerError, "Gagal memperbarui konten")
 	}
+
+	h.auditSvc.Log(c, "CMS_UPDATE_CONTENT", "cms", "site_content", fmt.Sprintf("Admin memperbarui %d butir konten situs", len(items)), nil)
 
 	return response.SuccessWithMessage(c, nil, "Konten berhasil disimpan")
 }
@@ -761,3 +814,78 @@ func (h *AdminHandler) UploadProjectFile(c echo.Context) error {
 
 	return response.Created(c, pfile, "File berhasil diunggah")
 }
+
+// GET /api/admin/audit-logs
+func (h *AdminHandler) ListAuditLogs(c echo.Context) error {
+	entity := c.QueryParam("entity")
+	action := c.QueryParam("action")
+	search := c.QueryParam("search")
+	page, _ := strconv.Atoi(c.QueryParam("page"))
+	limit, _ := strconv.Atoi(c.QueryParam("limit"))
+
+	if page < 1 {
+		page = 1
+	}
+	if limit <= 0 {
+		limit = 25
+	}
+
+	logs, total, err := h.auditSvc.ListLogs(entity, action, search, page, limit)
+	if err != nil {
+		return response.Error(c, http.StatusInternalServerError, "Gagal mengambil log audit: "+err.Error())
+	}
+
+	return response.Success(c, map[string]interface{}{
+		"logs":  logs,
+		"total": total,
+		"page":  page,
+		"limit": limit,
+	})
+}
+
+// GET /api/admin/ai-blog/settings
+func (h *AdminHandler) GetAIBlogSettings(c echo.Context) error {
+	setting, err := h.aiBlogSvc.GetSettings()
+	if err != nil {
+		return response.Error(c, http.StatusInternalServerError, "Gagal memuat pengaturan AI blog: "+err.Error())
+	}
+	return response.Success(c, setting)
+}
+
+// PUT /api/admin/ai-blog/settings
+func (h *AdminHandler) UpdateAIBlogSettings(c echo.Context) error {
+	var req model.AIBlogSetting
+	if err := c.Bind(&req); err != nil {
+		return response.Error(c, http.StatusBadRequest, "Data pengaturan tidak valid")
+	}
+
+	updated, err := h.aiBlogSvc.UpdateSettings(&req)
+	if err != nil {
+		return response.Error(c, http.StatusInternalServerError, "Gagal menyimpan pengaturan: "+err.Error())
+	}
+
+	h.auditSvc.Log(c, "AI_BLOG_CONFIG_UPDATE", "ai_blog", fmt.Sprintf("%d", updated.ID), "Memperbarui konfigurasi AI Blog Generator", updated)
+	return response.SuccessWithMessage(c, updated, "Pengaturan AI blog berhasil diperbarui")
+}
+
+// POST /api/admin/ai-blog/generate-now
+func (h *AdminHandler) GenerateAIBlogNow(c echo.Context) error {
+	var req struct {
+		Topic string `json:"topic"`
+	}
+	_ = c.Bind(&req)
+
+	article, err := h.aiBlogSvc.GenerateArticle(req.Topic)
+	if err != nil {
+		return response.Error(c, http.StatusInternalServerError, "Gagal generate artikel AI: "+err.Error())
+	}
+
+	h.auditSvc.Log(c, "AI_BLOG_GENERATE_MANUAL", "article", fmt.Sprintf("%d", article.ID), fmt.Sprintf("Admin memicu pembuatan artikel AI: '%s'", article.Title), map[string]interface{}{
+		"id":    article.ID,
+		"title": article.Title,
+		"slug":  article.Slug,
+	})
+
+	return response.SuccessWithMessage(c, article, "Artikel berhasil digenerate oleh AI Gemini")
+}
+

@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"fmt"
 	"net/http"
 	"strconv"
 
@@ -13,12 +14,14 @@ import (
 type PaymentHandler struct {
 	paymentSvc *service.PaymentService
 	storageSvc *service.StorageService
+	auditSvc   service.AuditService
 }
 
-func NewPaymentHandler(paymentSvc *service.PaymentService, storageSvc *service.StorageService) *PaymentHandler {
+func NewPaymentHandler(paymentSvc *service.PaymentService, storageSvc *service.StorageService, auditSvc service.AuditService) *PaymentHandler {
 	return &PaymentHandler{
 		paymentSvc: paymentSvc,
 		storageSvc: storageSvc,
+		auditSvc:   auditSvc,
 	}
 }
 
@@ -186,6 +189,10 @@ func (h *PaymentHandler) UploadProof(c echo.Context) error {
 		return response.Error(c, http.StatusInternalServerError, "Gagal memperbarui bukti pembayaran: "+err.Error())
 	}
 
+	if h.auditSvc != nil {
+		h.auditSvc.Log(c, "PAYMENT_PROOF_UPLOAD", "payment", fmt.Sprintf("%d", payment.ID), fmt.Sprintf("Klien mengunggah bukti pembayaran #%s", payment.InvoiceNumber), map[string]interface{}{"payment_id": payment.ID, "bank": bankName, "account_holder": accountHolder, "file_url": uploadRes.FileURL})
+	}
+
 	return response.SuccessWithMessage(c, payment, "Bukti pembayaran berhasil diunggah. Tim kami akan segera memverifikasinya.")
 }
 
@@ -207,6 +214,10 @@ func (h *PaymentHandler) UpdateAdminSettings(c echo.Context) error {
 
 	if err := h.paymentSvc.SaveAdminSettings(&cfg); err != nil {
 		return response.Error(c, http.StatusInternalServerError, "Gagal menyimpan pengaturan: "+err.Error())
+	}
+
+	if h.auditSvc != nil {
+		h.auditSvc.Log(c, "PAYMENT_SETTINGS_UPDATE", "payment_settings", "gateway_config", "Admin memperbarui konfigurasi metode pembayaran gateway", cfg)
 	}
 
 	return response.SuccessWithMessage(c, cfg, "Pengaturan metode pembayaran berhasil disimpan")
@@ -256,6 +267,10 @@ func (h *PaymentHandler) VerifyAdminPayment(c echo.Context) error {
 	payment, err := h.paymentSvc.VerifyManualPayment(uint(paymentID), req.Status, req.Notes)
 	if err != nil {
 		return response.Error(c, http.StatusInternalServerError, "Gagal memverifikasi pembayaran: "+err.Error())
+	}
+
+	if h.auditSvc != nil {
+		h.auditSvc.Log(c, "PAYMENT_VERIFY", "payment", fmt.Sprintf("%d", payment.ID), fmt.Sprintf("Admin memverifikasi pembayaran #%s menjadi '%s'", payment.InvoiceNumber, req.Status), req)
 	}
 
 	return response.SuccessWithMessage(c, payment, "Status pembayaran berhasil diperbarui")

@@ -140,6 +140,11 @@ func (s *SaaSService) GetActiveProducts() ([]model.SaaSProduct, error) {
 	return s.saasRepo.GetActiveProducts()
 }
 
+// GetFeaturedProducts returns all featured SaaS products for landing page
+func (s *SaaSService) GetFeaturedProducts() ([]model.SaaSProduct, error) {
+	return s.saasRepo.GetFeaturedProducts()
+}
+
 // GetProductBySlug returns product detail
 func (s *SaaSService) GetProductBySlug(slug string) (*model.SaaSProduct, error) {
 	return s.saasRepo.GetProductBySlug(slug)

@@ -178,32 +178,56 @@ func (s *ProjectService) DeleteFile(id uint) error {
 	return s.fileRepo.Delete(id)
 }
 
+type QuotationExtra struct {
+	ProposalURL         string
+	ProposalFileName    string
+	HasMaintenance      bool
+	MaintenanceDuration string
+	MaintenancePrice    int64
+}
+
 // Quotations
-func (s *ProjectService) SaveQuotation(projectID uint, items interface{}, totalAmount int64, days int, validUntil *time.Time) (*model.Quotation, error) {
+func (s *ProjectService) SaveQuotation(projectID uint, items interface{}, totalAmount int64, days int, validUntil *time.Time, extra ...QuotationExtra) (*model.Quotation, error) {
 	itemsJSON, err := json.Marshal(items)
 	if err != nil {
 		return nil, err
 	}
 
+	var ext QuotationExtra
+	if len(extra) > 0 {
+		ext = extra[0]
+	}
+
 	q, _ := s.quotationRepo.FindByProjectID(projectID)
 	if q == nil {
 		q = &model.Quotation{
-			ProjectID:     projectID,
-			Items:         string(itemsJSON),
-			TotalAmount:   totalAmount,
-			EstimatedDays: days,
-			ValidUntil:    validUntil,
-			Status:        "draft",
+			ProjectID:           projectID,
+			Items:               string(itemsJSON),
+			TotalAmount:         totalAmount,
+			EstimatedDays:       days,
+			ValidUntil:          validUntil,
+			ProposalURL:         ext.ProposalURL,
+			ProposalFileName:    ext.ProposalFileName,
+			HasMaintenance:      ext.HasMaintenance,
+			MaintenanceDuration: ext.MaintenanceDuration,
+			MaintenancePrice:    ext.MaintenancePrice,
+			Status:              "draft",
 		}
 		err = s.quotationRepo.Create(q)
 	} else {
-		err = s.quotationRepo.Update(q.ID, map[string]interface{}{
-			"items":          string(itemsJSON),
-			"total_amount":   totalAmount,
-			"estimated_days": days,
-			"valid_until":    validUntil,
-			"status":         "draft",
-		})
+		updateMap := map[string]interface{}{
+			"items":                string(itemsJSON),
+			"total_amount":         totalAmount,
+			"estimated_days":       days,
+			"valid_until":          validUntil,
+			"proposal_url":         ext.ProposalURL,
+			"proposal_file_name":   ext.ProposalFileName,
+			"has_maintenance":      ext.HasMaintenance,
+			"maintenance_duration": ext.MaintenanceDuration,
+			"maintenance_price":    ext.MaintenancePrice,
+			"status":               "draft",
+		}
+		err = s.quotationRepo.Update(q.ID, updateMap)
 	}
 
 	// Synchronize project total amount if quotation amount changed
@@ -220,14 +244,46 @@ func (s *ProjectService) SendQuotation(quotationID uint) error {
 	})
 }
 
+func (s *ProjectService) BypassApproveQuotation(quotationID uint, adminName string) error {
+	now := time.Now()
+	respText := "Disetujui langsung oleh Admin (Bypass)"
+	if adminName != "" {
+		respText = fmt.Sprintf("Disetujui langsung oleh Admin (%s) via Bypass", adminName)
+	}
+	err := s.quotationRepo.Update(quotationID, map[string]interface{}{
+		"status":          "accepted",
+		"approved_by":     "admin_bypass",
+		"approved_at":     &now,
+		"client_response": respText,
+	})
+	if err != nil {
+		return err
+	}
+
+	var q model.Quotation
+	if err := s.db.First(&q, quotationID).Error; err == nil {
+		s.db.Model(&model.Project{}).Where("id = ?", q.ProjectID).Updates(map[string]interface{}{
+			"total_amount": q.TotalAmount,
+			"status":       "design",
+		})
+	}
+	return nil
+}
+
 func (s *ProjectService) RespondQuotation(quotationID uint, status, responseText string) error {
 	if status != "accepted" && status != "rejected" && status != "negotiating" {
 		return errors.New("status respon tidak valid")
 	}
-	err := s.quotationRepo.Update(quotationID, map[string]interface{}{
+	now := time.Now()
+	updateData := map[string]interface{}{
 		"status":          status,
 		"client_response": responseText,
-	})
+	}
+	if status == "accepted" {
+		updateData["approved_by"] = "client"
+		updateData["approved_at"] = &now
+	}
+	err := s.quotationRepo.Update(quotationID, updateData)
 	if err != nil {
 		return err
 	}

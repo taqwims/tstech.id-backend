@@ -26,6 +26,7 @@ type SaaSProduct struct {
 	WebhookURL       string         `json:"webhook_url" gorm:"size:255"` // Endpoint to notify remote SaaS tenant creation
 	APISecretKey     string         `json:"-" gorm:"size:255"`           // Secret for signing SSO & webhooks
 	IsActive         bool           `json:"is_active" gorm:"default:true;index"`
+	IsFeatured       bool           `json:"is_featured" gorm:"default:true;index"`
 	SortOrder        int            `json:"sort_order" gorm:"default:0"`
 	Plans            []SaaSPlan     `json:"plans,omitempty" gorm:"foreignKey:SaaSProductID"`
 	CreatedAt        time.Time      `json:"created_at"`
