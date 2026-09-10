@@ -29,14 +29,30 @@ func NewProductRepo(db *gorm.DB) ProductRepository {
 }
 
 func (r *productRepo) Create(product *model.Product) error {
-	return r.db.Create(product).Error
+	if err := r.db.Create(product).Error; err != nil {
+		return err
+	}
+	if product.IsSaaS {
+		r.syncSaaSProduct(product)
+	}
+	return nil
 }
 
 func (r *productRepo) Update(product *model.Product) error {
-	return r.db.Save(product).Error
+	if err := r.db.Save(product).Error; err != nil {
+		return err
+	}
+	if product.IsSaaS {
+		r.syncSaaSProduct(product)
+	}
+	return nil
 }
 
 func (r *productRepo) Delete(id uint) error {
+	var p model.Product
+	if err := r.db.First(&p, id).Error; err == nil {
+		r.db.Where("slug = ?", p.Slug).Delete(&model.SaaSProduct{})
+	}
 	// Delete associated plans as well
 	r.db.Where("product_id = ?", id).Delete(&model.SaaSPlan{})
 	return r.db.Delete(&model.Product{}, id).Error
@@ -100,6 +116,15 @@ func (r *productRepo) ListAdmin(category string, search string) ([]model.Product
 }
 
 func (r *productRepo) CreatePlan(plan *model.SaaSPlan) error {
+	if plan.ProductID != nil && *plan.ProductID > 0 {
+		var p model.Product
+		if err := r.db.First(&p, *plan.ProductID).Error; err == nil {
+			var saasProd model.SaaSProduct
+			if err := r.db.Where("slug = ?", p.Slug).First(&saasProd).Error; err == nil {
+				plan.SaaSProductID = saasProd.ID
+			}
+		}
+	}
 	return r.db.Create(plan).Error
 }
 
@@ -110,3 +135,59 @@ func (r *productRepo) UpdatePlan(plan *model.SaaSPlan) error {
 func (r *productRepo) DeletePlan(id uint) error {
 	return r.db.Delete(&model.SaaSPlan{}, id).Error
 }
+
+func (r *productRepo) syncSaaSProduct(product *model.Product) {
+	var saasProd model.SaaSProduct
+	err := r.db.Where("slug = ?", product.Slug).First(&saasProd).Error
+	if err != nil {
+		saasProd = model.SaaSProduct{
+			Slug:             product.Slug,
+			Name:             product.Title,
+			Tagline:          product.Tagline,
+			Icon:             product.Icon,
+			Category:         product.Category,
+			SubdomainPattern: product.SubdomainPattern,
+			BaseDomain:       product.BaseDomain,
+			DemoURL:          product.DemoURL,
+			DocURL:           product.DocURL,
+			Thumbnail:        product.Thumbnail,
+			Images:           product.Images,
+			Features:         product.Features,
+			TechStack:        product.TechStack,
+			Overview:         product.Overview,
+			WebhookURL:       product.WebhookURL,
+			APISecretKey:     product.APISecretKey,
+			IsActive:         product.IsActive,
+			IsFeatured:       product.IsFeatured,
+			SortOrder:        product.SortOrder,
+		}
+		_ = r.db.Create(&saasProd)
+	} else {
+		saasProd.Name = product.Title
+		saasProd.Tagline = product.Tagline
+		saasProd.Icon = product.Icon
+		saasProd.Category = product.Category
+		saasProd.SubdomainPattern = product.SubdomainPattern
+		saasProd.BaseDomain = product.BaseDomain
+		saasProd.DemoURL = product.DemoURL
+		saasProd.DocURL = product.DocURL
+		saasProd.Thumbnail = product.Thumbnail
+		saasProd.Images = product.Images
+		saasProd.Features = product.Features
+		saasProd.TechStack = product.TechStack
+		saasProd.Overview = product.Overview
+		saasProd.WebhookURL = product.WebhookURL
+		if product.APISecretKey != "" {
+			saasProd.APISecretKey = product.APISecretKey
+		}
+		saasProd.IsActive = product.IsActive
+		saasProd.IsFeatured = product.IsFeatured
+		saasProd.SortOrder = product.SortOrder
+		_ = r.db.Save(&saasProd)
+	}
+
+	if saasProd.ID > 0 {
+		r.db.Model(&model.SaaSPlan{}).Where("product_id = ?", product.ID).Update("saa_s_product_id", saasProd.ID)
+	}
+}
+
