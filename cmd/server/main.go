@@ -101,6 +101,7 @@ func main() {
 		Product:  handler.NewProductHandler(productSvc),
 		SaaS:     handler.NewSaaSHandler(saasSvc, saasRepo, storageSvc),
 		AuthSvc:  authSvc,
+		Storage:  storageSvc,
 	}
 
 	// Setup Echo server

@@ -295,38 +295,6 @@ func seedPortfoliosAndTestimonials(db *gorm.DB) {
 			db.Create(&s)
 		}
 		log.Println("🎨 Seeded sample portfolios with client testimonials")
-	} else {
-		// Backfill existing portfolios
-		db.Model(&model.Portfolio{}).Where("slug LIKE ?", "%fashion%").Or("slug LIKE ?", "%avoskin%").Or("id = ?", 1).Updates(map[string]interface{}{
-			"slug":                "avoskin-ecommerce-platform",
-			"title":               "AVOSKIN",
-			"client_name":         "Avoskin Beauty",
-			"thumbnail":           "/images/portfolio/avoskin.jpg",
-			"testimonial_quote":   "I am very satisfied with the result, it is exactly what I wanted, you did a very good job!",
-			"testimonial_author":  "Diaby Mamadou",
-			"testimonial_role":    "Founder & CTO",
-			"testimonial_company": "Genesys - Paris, France",
-		})
-		db.Model(&model.Portfolio{}).Where("slug LIKE ?", "%pos%").Or("slug LIKE ?", "%kkbc%").Or("id = ?", 2).Updates(map[string]interface{}{
-			"slug":                "kkbc-property-platform",
-			"title":               "KKBC",
-			"client_name":         "Karya Real Estate",
-			"thumbnail":           "/images/portfolio/kkbc.jpg",
-			"testimonial_quote":   "Sistem manajemen properti dan billing yang dibangun TsTech sangat stabil dan memangkas waktu kerja tim hingga 70%.",
-			"testimonial_author":  "Hendro Kusumo",
-			"testimonial_role":    "Operational Director",
-			"testimonial_company": "Karya Property - Jakarta",
-		})
-		db.Model(&model.Portfolio{}).Where("slug LIKE ?", "%erp%").Or("slug LIKE ?", "%merry%").Or("id = ?", 3).Updates(map[string]interface{}{
-			"slug":                "going-merry-travel",
-			"title":               "GOING MERRY",
-			"client_name":         "Going Merry Travel",
-			"thumbnail":           "/images/portfolio/going-merry.jpg",
-			"testimonial_quote":   "The booking platform reduced our operations turnaround by 90%. Incredible engineering quality and responsiveness.",
-			"testimonial_author":  "Sarah Jenkins",
-			"testimonial_role":    "Head of Growth",
-			"testimonial_company": "Going Merry Travel - Bali",
-		})
 	}
 
 	var tCount int64

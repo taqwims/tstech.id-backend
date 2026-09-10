@@ -1,10 +1,14 @@
 package router
 
 import (
+	"io"
+	"net/http"
+	"path/filepath"
+
+	"github.com/labstack/echo/v4"
 	"github.com/tstech/backend/internal/handler"
 	"github.com/tstech/backend/internal/middleware"
 	"github.com/tstech/backend/internal/service"
-	"github.com/labstack/echo/v4"
 )
 
 type Handlers struct {
@@ -24,6 +28,7 @@ type Handlers struct {
 	Product      *handler.ProductHandler
 	SaaS         *handler.SaaSHandler
 	AuthSvc      *service.AuthService
+	Storage      *service.StorageService
 }
 
 func Setup(e *echo.Echo, h *Handlers) {
@@ -32,15 +37,30 @@ func Setup(e *echo.Echo, h *Handlers) {
 	e.Use(middleware.Logger())
 	e.Use(middleware.CORS())
 
-	// Static uploads directory with caching headers
-	uploadsGroup := e.Group("/uploads")
-	uploadsGroup.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
-		return func(c echo.Context) error {
-			c.Response().Header().Set("Cache-Control", "public, max-age=2592000, immutable")
-			return next(c)
+	// Static uploads directory with caching headers & R2 cloud fallback
+	e.Match([]string{"GET", "HEAD"}, "/uploads/*", func(c echo.Context) error {
+		param := c.Param("*")
+		filename := filepath.Base(param)
+		if filename == "" || filename == "." || filename == "/" {
+			return echo.ErrNotFound
 		}
+		if h.Storage != nil {
+			rc, contentType, err := h.Storage.GetFile(filename)
+			if err == nil {
+				defer rc.Close()
+				c.Response().Header().Set("Cache-Control", "public, max-age=2592000, immutable")
+				if contentType != "" {
+					c.Response().Header().Set("Content-Type", contentType)
+				}
+				if c.Request().Method == "HEAD" {
+					return c.NoContent(http.StatusOK)
+				}
+				_, err = io.Copy(c.Response().Writer, rc)
+				return err
+			}
+		}
+		return echo.ErrNotFound
 	})
-	uploadsGroup.Static("", "./uploads")
 
 	// API group
 	api := e.Group("/api")
