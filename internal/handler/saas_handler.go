@@ -213,7 +213,7 @@ func (h *SaaSHandler) SubmitManualProof(c echo.Context) error {
 	var proofURL string
 	file, err := c.FormFile("proof_file")
 	if err == nil && file != nil && h.storageSvc != nil {
-		res, err := h.storageSvc.SaveFile(file)
+		res, err := h.storageSvc.SaveFile(file, "payments")
 		if err == nil && res != nil {
 			proofURL = res.FileURL
 		}

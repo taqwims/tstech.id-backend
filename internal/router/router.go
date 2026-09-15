@@ -4,6 +4,7 @@ import (
 	"io"
 	"net/http"
 	"path/filepath"
+	"strings"
 
 	"github.com/labstack/echo/v4"
 	"github.com/tstech/backend/internal/handler"
@@ -40,12 +41,12 @@ func Setup(e *echo.Echo, h *Handlers) {
 	// Static uploads directory with caching headers & R2 cloud fallback
 	e.Match([]string{"GET", "HEAD"}, "/uploads/*", func(c echo.Context) error {
 		param := c.Param("*")
-		filename := filepath.Base(param)
-		if filename == "" || filename == "." || filename == "/" {
+		cleanParam := strings.TrimPrefix(filepath.ToSlash(filepath.Clean(param)), "/")
+		if cleanParam == "" || cleanParam == "." || strings.HasPrefix(cleanParam, "..") {
 			return echo.ErrNotFound
 		}
 		if h.Storage != nil {
-			rc, contentType, err := h.Storage.GetFile(filename)
+			rc, contentType, err := h.Storage.GetFile(cleanParam)
 			if err == nil {
 				defer rc.Close()
 				c.Response().Header().Set("Cache-Control", "public, max-age=2592000, immutable")

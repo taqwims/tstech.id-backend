@@ -738,7 +738,18 @@ func (h *AdminHandler) UploadFile(c echo.Context) error {
 		return response.Error(c, http.StatusBadRequest, "File tidak ditemukan")
 	}
 
-	result, err := h.storageSvc.SaveFile(file)
+	folder := c.FormValue("folder")
+	if folder == "" {
+		folder = c.QueryParam("folder")
+	}
+	if folder == "" {
+		folder = c.FormValue("category")
+	}
+	if folder == "" {
+		folder = "cms"
+	}
+
+	result, err := h.storageSvc.SaveFile(file, folder)
 	if err != nil {
 		return response.Error(c, http.StatusInternalServerError, "Gagal mengunggah file")
 	}
@@ -793,7 +804,12 @@ func (h *AdminHandler) UploadProjectFile(c echo.Context) error {
 		category = "deliverable"
 	}
 
-	result, err := h.storageSvc.SaveFile(file)
+	folder := "projects"
+	if category != "" {
+		folder = fmt.Sprintf("projects/%s", category)
+	}
+
+	result, err := h.storageSvc.SaveFile(file, folder)
 	if err != nil {
 		return response.Error(c, http.StatusInternalServerError, "Gagal mengunggah file")
 	}

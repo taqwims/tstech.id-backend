@@ -190,7 +190,12 @@ func (h *ClientHandler) UploadFile(c echo.Context) error {
 		category = "asset"
 	}
 
-	result, err := h.storageSvc.SaveFile(file)
+	folder := "projects"
+	if category != "" {
+		folder = fmt.Sprintf("projects/%s", category)
+	}
+
+	result, err := h.storageSvc.SaveFile(file, folder)
 	if err != nil {
 		return response.Error(c, http.StatusInternalServerError, "Gagal mengunggah file")
 	}

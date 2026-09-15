@@ -179,7 +179,7 @@ func (h *PaymentHandler) UploadProof(c echo.Context) error {
 	accountHolder := c.FormValue("account_holder")
 	notes := c.FormValue("notes")
 
-	uploadRes, err := h.storageSvc.SaveFile(file)
+	uploadRes, err := h.storageSvc.SaveFile(file, "payments")
 	if err != nil {
 		return response.Error(c, http.StatusInternalServerError, "Gagal mengunggah file: "+err.Error())
 	}
