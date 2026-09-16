@@ -156,6 +156,7 @@ func Setup(e *echo.Echo, h *Handlers) {
 
 	client.GET("/profile", h.Client.GetProfile)
 	client.PUT("/profile", h.Client.UpdateProfile)
+	client.GET("/orders", h.Client.ListOrders)
 	client.GET("/projects", h.Client.ListProjects)
 	client.GET("/projects/:id", h.Client.GetProject)
 	client.POST("/projects/:id/comments", h.Client.AddComment)

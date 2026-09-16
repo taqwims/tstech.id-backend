@@ -80,7 +80,7 @@ func (s *PaymentService) GenerateInvoiceNumber() string {
 // GetSettingValue helper to get a setting key from database with fallback
 func (s *PaymentService) GetSettingValue(key, fallback string) string {
 	var item model.PaymentSetting
-	if err := s.db.Where("`key` = ? OR \"key\" = ?", key, key).First(&item).Error; err == nil && item.Value != "" {
+	if err := s.db.Where(&model.PaymentSetting{Key: key}).First(&item).Error; err == nil && item.Value != "" {
 		return item.Value
 	}
 	return fallback
@@ -96,13 +96,35 @@ func (s *PaymentService) GetAdminSettings() (*model.PaymentSettingsConfig, error
 		mapSettings[setting.Key] = setting.Value
 	}
 
-	pakasirEnabled := mapSettings["pakasir_enabled"] != "false"
+	pakasirEnabled := true
+	if val, ok := mapSettings["pakasir_enabled"]; ok {
+		pakasirEnabled = val != "false"
+	}
 	pakasirQRISOnly := mapSettings["pakasir_qris_only"] == "true"
-	mayarEnabled := mapSettings["mayar_enabled"] != "false"
+
+	mayarEnabled := true
+	if val, ok := mapSettings["mayar_enabled"]; ok {
+		mayarEnabled = val != "false"
+	}
 	mayarIsProd := mapSettings["mayar_is_production"] == "true"
-	ipaymuEnabled := mapSettings["ipaymu_enabled"] != "false"
+
+	ipaymuEnabled := true
+	if val, ok := mapSettings["ipaymu_enabled"]; ok {
+		ipaymuEnabled = val != "false"
+	}
 	ipaymuIsProd := mapSettings["ipaymu_is_production"] == "true"
-	manualEnabled := mapSettings["manual_transfer_enabled"] != "false"
+
+	manualEnabled := true
+	if val, ok := mapSettings["manual_transfer_enabled"]; ok {
+		manualEnabled = val != "false"
+	}
+
+	getVal := func(key, fallback string) string {
+		if val, exists := mapSettings[key]; exists {
+			return val
+		}
+		return fallback
+	}
 
 	var bankAccounts []model.BankAccount
 	if rawBanks, ok := mapSettings["manual_bank_accounts"]; ok && rawBanks != "" {
@@ -119,22 +141,22 @@ func (s *PaymentService) GetAdminSettings() (*model.PaymentSettingsConfig, error
 
 	cfgResp := &model.PaymentSettingsConfig{
 		PakasirEnabled:        pakasirEnabled,
-		PakasirProjectSlug:    s.GetSettingValue("pakasir_project_slug", s.cfg.PakasirProjectSlug),
-		PakasirAPIKey:         s.GetSettingValue("pakasir_api_key", s.cfg.PakasirAPIKey),
+		PakasirProjectSlug:    getVal("pakasir_project_slug", s.cfg.PakasirProjectSlug),
+		PakasirAPIKey:         getVal("pakasir_api_key", s.cfg.PakasirAPIKey),
 		PakasirQRISOnly:       pakasirQRISOnly,
 		MayarEnabled:          mayarEnabled,
-		MayarAPIKey:           mapSettings["mayar_api_key"],
+		MayarAPIKey:           getVal("mayar_api_key", s.cfg.MayarAPIKey),
 		MayarIsProduction:     mayarIsProd,
-		MayarWebhookToken:     mapSettings["mayar_webhook_token"],
+		MayarWebhookToken:     getVal("mayar_webhook_token", s.cfg.MayarWebhookToken),
 		IpaymuEnabled:         ipaymuEnabled,
-		IpaymuVA:              s.GetSettingValue("ipaymu_va", s.cfg.IpaymuVA),
-		IpaymuAPIKey:          s.GetSettingValue("ipaymu_api_key", s.cfg.IpaymuAPIKey),
+		IpaymuVA:              getVal("ipaymu_va", s.cfg.IpaymuVA),
+		IpaymuAPIKey:          getVal("ipaymu_api_key", s.cfg.IpaymuAPIKey),
 		IpaymuIsProduction:    ipaymuIsProd,
 		ManualTransferEnabled: manualEnabled,
 		ManualBankAccounts:    bankAccounts,
-		ManualInstructions:    s.GetSettingValue("manual_instructions", "Silakan lakukan transfer tepat sesuai total nominal yang tertera ke salah satu rekening resmi di atas. Setelah transfer berhasil, harap unggah bukti transfer melalui halaman ini atau kirimkan konfirmasi via WhatsApp kami agar pesanan Anda dapat langsung diproses."),
-		ManualWhatsApp:        s.GetSettingValue("manual_whatsapp", s.cfg.WhatsAppNumber),
-		DefaultGateway:        s.GetSettingValue("default_gateway", "customer_choice"),
+		ManualInstructions:    getVal("manual_instructions", "Silakan lakukan transfer tepat sesuai total nominal yang tertera ke salah satu rekening resmi di atas. Setelah transfer berhasil, harap unggah bukti transfer melalui halaman ini atau kirimkan konfirmasi via WhatsApp kami agar pesanan Anda dapat langsung diproses."),
+		ManualWhatsApp:        getVal("manual_whatsapp", s.cfg.WhatsAppNumber),
+		DefaultGateway:        getVal("default_gateway", "customer_choice"),
 	}
 
 	return cfgResp, nil
@@ -144,7 +166,7 @@ func (s *PaymentService) GetAdminSettings() (*model.PaymentSettingsConfig, error
 func (s *PaymentService) SaveAdminSettings(cfg *model.PaymentSettingsConfig) error {
 	saveKey := func(key, val string) {
 		var item model.PaymentSetting
-		if err := s.db.Where("`key` = ? OR \"key\" = ?", key, key).First(&item).Error; err != nil {
+		if err := s.db.Where(&model.PaymentSetting{Key: key}).First(&item).Error; err != nil {
 			s.db.Create(&model.PaymentSetting{Key: key, Value: val, UpdatedAt: time.Now()})
 		} else {
 			item.Value = val
@@ -266,27 +288,49 @@ func (s *PaymentService) CreatePayment(req *CreatePaymentRequest) (*CreatePaymen
 		}
 	}
 
-	invoiceNumber := s.GenerateInvoiceNumber()
+	// Check if there's already an active pending payment for this exact project/order & amount
+	var payment *model.Payment
+	var isNewPayment bool
 
-	payment := &model.Payment{
-		InvoiceNumber: invoiceNumber,
-		OrderID:       req.OrderID,
-		ProjectID:     req.ProjectID,
-		Amount:        req.Amount,
-		PaymentType:   req.PaymentType,
-		PaymentMethod: method,
-		Status:        "pending",
-		Notes:         req.Notes,
+	var existingPayment model.Payment
+	query := s.db.Where("status = ? AND amount = ?", "pending", req.Amount)
+	if req.ProjectID != nil && *req.ProjectID > 0 {
+		query = query.Where("project_id = ?", *req.ProjectID)
+	} else if req.OrderID != nil && *req.OrderID > 0 {
+		query = query.Where("order_id = ?", *req.OrderID)
+	} else {
+		query = nil
 	}
 
-	if err := s.db.Create(payment).Error; err != nil {
-		return nil, fmt.Errorf("failed to create payment record: %w", err)
+	if query != nil && query.Order("id DESC").First(&existingPayment).Error == nil {
+		payment = &existingPayment
+		payment.PaymentMethod = method
+		payment.Notes = req.Notes
+	} else {
+		invoiceNumber := s.GenerateInvoiceNumber()
+		payment = &model.Payment{
+			InvoiceNumber: invoiceNumber,
+			OrderID:       req.OrderID,
+			ProjectID:     req.ProjectID,
+			Amount:        req.Amount,
+			PaymentType:   req.PaymentType,
+			PaymentMethod: method,
+			Status:        "pending",
+			Notes:         req.Notes,
+		}
+		if err := s.db.Create(payment).Error; err != nil {
+			return nil, fmt.Errorf("failed to create payment record: %w", err)
+		}
+		isNewPayment = true
 	}
 
 	switch method {
 	case "pakasir":
 		paymentURL, transID, err := s.callPakasirAPI(payment.ID, req, settings)
 		if err != nil {
+			if isNewPayment {
+				s.db.Unscoped().Delete(payment)
+			}
 			return nil, fmt.Errorf("gagal membuat link pembayaran Pakasir: %w", err)
 		}
 		payment.PaymentURL = paymentURL
@@ -294,7 +338,7 @@ func (s *PaymentService) CreatePayment(req *CreatePaymentRequest) (*CreatePaymen
 		s.db.Save(payment)
 
 		return &CreatePaymentResponse{
-			InvoiceNumber:  invoiceNumber,
+			InvoiceNumber:  payment.InvoiceNumber,
 			PaymentURL:     paymentURL,
 			PaymentID:      payment.ID,
 			PaymentMethod:  "pakasir",
@@ -305,6 +349,9 @@ func (s *PaymentService) CreatePayment(req *CreatePaymentRequest) (*CreatePaymen
 	case "mayar":
 		paymentURL, transID, qrURL, err := s.callMayarAPI(payment.ID, req, settings)
 		if err != nil {
+			if isNewPayment {
+				s.db.Unscoped().Delete(payment)
+			}
 			return nil, fmt.Errorf("gagal membuat sesi pembayaran Mayar: %w", err)
 		}
 		payment.PaymentURL = paymentURL
@@ -312,7 +359,7 @@ func (s *PaymentService) CreatePayment(req *CreatePaymentRequest) (*CreatePaymen
 		s.db.Save(payment)
 
 		return &CreatePaymentResponse{
-			InvoiceNumber:  invoiceNumber,
+			InvoiceNumber:  payment.InvoiceNumber,
 			PaymentURL:     paymentURL,
 			QRCodeURL:      qrURL,
 			PaymentID:      payment.ID,
@@ -327,6 +374,9 @@ func (s *PaymentService) CreatePayment(req *CreatePaymentRequest) (*CreatePaymen
 	case "ipaymu":
 		paymentURL, transID, err := s.callIpaymuAPI(payment.ID, req, settings)
 		if err != nil {
+			if isNewPayment {
+				s.db.Unscoped().Delete(payment)
+			}
 			return nil, fmt.Errorf("gagal membuat link pembayaran iPaymu: %w", err)
 		}
 		payment.PaymentURL = paymentURL
@@ -335,7 +385,7 @@ func (s *PaymentService) CreatePayment(req *CreatePaymentRequest) (*CreatePaymen
 		s.db.Save(payment)
 
 		return &CreatePaymentResponse{
-			InvoiceNumber:  invoiceNumber,
+			InvoiceNumber:  payment.InvoiceNumber,
 			PaymentURL:     paymentURL,
 			PaymentID:      payment.ID,
 			PaymentMethod:  "ipaymu",
@@ -348,7 +398,7 @@ func (s *PaymentService) CreatePayment(req *CreatePaymentRequest) (*CreatePaymen
 		s.db.Save(payment)
 
 		return &CreatePaymentResponse{
-			InvoiceNumber: invoiceNumber,
+			InvoiceNumber: payment.InvoiceNumber,
 			PaymentID:     payment.ID,
 			PaymentMethod: "manual",
 			Status:        payment.Status,
@@ -358,11 +408,11 @@ func (s *PaymentService) CreatePayment(req *CreatePaymentRequest) (*CreatePaymen
 		}, nil
 
 	default:
-		// Default fallback to manual or mayar
+		// Default fallback to manual
 		payment.PaymentMethod = "manual"
 		s.db.Save(payment)
 		return &CreatePaymentResponse{
-			InvoiceNumber: invoiceNumber,
+			InvoiceNumber: payment.InvoiceNumber,
 			PaymentID:     payment.ID,
 			PaymentMethod: "manual",
 			Status:        payment.Status,
@@ -1236,7 +1286,7 @@ func (s *PaymentService) VerifyDocument(docNumber, docType string) (map[string]i
 				"is_valid":        true,
 				"document_type":   "INVOICE",
 				"document_number": payment.InvoiceNumber,
-				"issuer":          "PT TSTECH SOLUSI TEKNOLOGI",
+				"issuer":          "TSTECH SOLUSI TEKNOLOGI",
 				"client_name":     clientName,
 				"company_name":    companyName,
 				"project_title":   projectTitle,
@@ -1292,7 +1342,7 @@ func (s *PaymentService) VerifyDocument(docNumber, docType string) (map[string]i
 				"is_valid":        true,
 				"document_type":   "SURAT PENAWARAN HARGA",
 				"document_number": fmt.Sprintf("QUO/%d%02d/%04d", q.CreatedAt.Year(), int(q.CreatedAt.Month()), q.ID),
-				"issuer":          "PT TSTECH SOLUSI TEKNOLOGI",
+				"issuer":          "TSTECH SOLUSI TEKNOLOGI",
 				"client_name":     clientName,
 				"company_name":    companyName,
 				"project_title":   projectTitle,

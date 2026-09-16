@@ -179,11 +179,12 @@ func (s *ProjectService) DeleteFile(id uint) error {
 }
 
 type QuotationExtra struct {
-	ProposalURL         string
-	ProposalFileName    string
-	HasMaintenance      bool
-	MaintenanceDuration string
-	MaintenancePrice    int64
+	ProposalURL           string
+	ProposalFileName      string
+	HasMaintenance        bool
+	MaintenanceDuration   string
+	MaintenancePrice      int64
+	AllowComponentPayment bool
 }
 
 // Quotations
@@ -201,39 +202,45 @@ func (s *ProjectService) SaveQuotation(projectID uint, items interface{}, totalA
 	q, _ := s.quotationRepo.FindByProjectID(projectID)
 	if q == nil {
 		q = &model.Quotation{
-			ProjectID:           projectID,
-			Items:               string(itemsJSON),
-			TotalAmount:         totalAmount,
-			EstimatedDays:       days,
-			ValidUntil:          validUntil,
-			ProposalURL:         ext.ProposalURL,
-			ProposalFileName:    ext.ProposalFileName,
-			HasMaintenance:      ext.HasMaintenance,
-			MaintenanceDuration: ext.MaintenanceDuration,
-			MaintenancePrice:    ext.MaintenancePrice,
-			Status:              "draft",
+			ProjectID:             projectID,
+			Items:                 string(itemsJSON),
+			TotalAmount:           totalAmount,
+			EstimatedDays:         days,
+			ValidUntil:            validUntil,
+			ProposalURL:           ext.ProposalURL,
+			ProposalFileName:      ext.ProposalFileName,
+			HasMaintenance:        ext.HasMaintenance,
+			MaintenanceDuration:   ext.MaintenanceDuration,
+			MaintenancePrice:      ext.MaintenancePrice,
+			AllowComponentPayment: ext.AllowComponentPayment,
+			Status:                "draft",
 		}
 		err = s.quotationRepo.Create(q)
 	} else {
 		updateMap := map[string]interface{}{
-			"items":                string(itemsJSON),
-			"total_amount":         totalAmount,
-			"estimated_days":       days,
-			"valid_until":          validUntil,
-			"proposal_url":         ext.ProposalURL,
-			"proposal_file_name":   ext.ProposalFileName,
-			"has_maintenance":      ext.HasMaintenance,
-			"maintenance_duration": ext.MaintenanceDuration,
-			"maintenance_price":    ext.MaintenancePrice,
-			"status":               "draft",
+			"items":                   string(itemsJSON),
+			"total_amount":            totalAmount,
+			"estimated_days":          days,
+			"valid_until":             validUntil,
+			"proposal_url":            ext.ProposalURL,
+			"proposal_file_name":      ext.ProposalFileName,
+			"has_maintenance":         ext.HasMaintenance,
+			"maintenance_duration":    ext.MaintenanceDuration,
+			"maintenance_price":       ext.MaintenancePrice,
+			"allow_component_payment": ext.AllowComponentPayment,
+			"status":                  "draft",
 		}
 		err = s.quotationRepo.Update(q.ID, updateMap)
 	}
 
-	// Synchronize project total amount if quotation amount changed
-	if totalAmount > 0 {
-		s.db.Model(&model.Project{}).Where("id = ?", projectID).Update("total_amount", totalAmount)
+	// Synchronize project allow_component_payment and total_amount
+	projectUpdates := map[string]interface{}{
+		"allow_component_payment": ext.AllowComponentPayment,
 	}
+	if totalAmount > 0 {
+		projectUpdates["total_amount"] = totalAmount
+	}
+	s.db.Model(&model.Project{}).Where("id = ?", projectID).Updates(projectUpdates)
 
 	return q, err
 }

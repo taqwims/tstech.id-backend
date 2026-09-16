@@ -4,6 +4,7 @@ import (
 	"crypto/rand"
 	"errors"
 	"fmt"
+	"math"
 	"regexp"
 	"strings"
 	"time"
@@ -176,9 +177,14 @@ func (s *SaaSService) Subscribe(userID uint, req SubscribeRequest) (*model.SaaSS
 	var periodDuration time.Duration
 	billingCycle := strings.ToLower(req.BillingCycle)
 	if billingCycle == "yearly" {
-		price = plan.PriceYearly
-		if price <= 0 {
-			price = plan.PriceMonthly * 12 * 0.85 // 15% discount fallback
+		basePrice := plan.PriceYearly
+		if basePrice <= 0 {
+			basePrice = plan.PriceMonthly * 12
+		}
+		if plan.DiscountPct > 0 {
+			price = math.Round(basePrice * (1.0 - float64(plan.DiscountPct)/100.0))
+		} else {
+			price = basePrice
 		}
 		periodDuration = 365 * 24 * time.Hour
 	} else {

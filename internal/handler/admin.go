@@ -70,7 +70,7 @@ func (h *AdminHandler) Dashboard(c echo.Context) error {
 	var totalConsultations int64
 	var totalContacts int64
 
-	h.db.Model(&model.Order{}).Count(&totalOrders)
+	h.db.Model(&model.Order{}).Where("status != 'converted' AND id NOT IN (SELECT order_id FROM projects WHERE order_id IS NOT NULL AND deleted_at IS NULL)").Count(&totalOrders)
 	h.db.Model(&model.Project{}).Count(&totalProjects)
 	h.db.Model(&model.Project{}).Where("status != ?", "completed").Count(&activeProjects)
 	h.db.Model(&model.User{}).Where("role = ?", "client").Count(&totalClients)
@@ -81,7 +81,8 @@ func (h *AdminHandler) Dashboard(c echo.Context) error {
 	h.db.Model(&model.Payment{}).Where("status = ?", "success").Select("COALESCE(SUM(amount), 0)").Scan(&revenue)
 
 	var recentOrders []model.Order
-	h.db.Order("created_at DESC").Limit(5).Find(&recentOrders)
+	h.db.Where("status != 'converted' AND id NOT IN (SELECT order_id FROM projects WHERE order_id IS NOT NULL AND deleted_at IS NULL)").
+		Order("created_at DESC").Limit(5).Find(&recentOrders)
 
 	var recentProjects []model.Project
 	h.db.Preload("Client").Order("created_at DESC").Limit(5).Find(&recentProjects)
@@ -314,15 +315,16 @@ func (h *AdminHandler) DeleteMilestone(c echo.Context) error {
 func (h *AdminHandler) SaveQuotation(c echo.Context) error {
 	projectID, _ := strconv.Atoi(c.Param("id"))
 	var req struct {
-		Items               interface{} `json:"items"`
-		TotalAmount         int64       `json:"total_amount"`
-		EstimatedDays       int         `json:"estimated_days"`
-		ValidUntil          *time.Time  `json:"valid_until"`
-		ProposalURL         string      `json:"proposal_url"`
-		ProposalFileName    string      `json:"proposal_file_name"`
-		HasMaintenance      bool        `json:"has_maintenance"`
-		MaintenanceDuration string      `json:"maintenance_duration"`
-		MaintenancePrice    int64       `json:"maintenance_price"`
+		Items                 interface{} `json:"items"`
+		TotalAmount           int64       `json:"total_amount"`
+		EstimatedDays         int         `json:"estimated_days"`
+		ValidUntil            *time.Time  `json:"valid_until"`
+		ProposalURL           string      `json:"proposal_url"`
+		ProposalFileName      string      `json:"proposal_file_name"`
+		HasMaintenance        bool        `json:"has_maintenance"`
+		MaintenanceDuration   string      `json:"maintenance_duration"`
+		MaintenancePrice      int64       `json:"maintenance_price"`
+		AllowComponentPayment bool        `json:"allow_component_payment"`
 	}
 	if err := c.Bind(&req); err != nil {
 		return response.Error(c, http.StatusBadRequest, "Format input tidak valid")
@@ -335,11 +337,12 @@ func (h *AdminHandler) SaveQuotation(c echo.Context) error {
 		req.EstimatedDays,
 		req.ValidUntil,
 		service.QuotationExtra{
-			ProposalURL:         req.ProposalURL,
-			ProposalFileName:    req.ProposalFileName,
-			HasMaintenance:      req.HasMaintenance,
-			MaintenanceDuration: req.MaintenanceDuration,
-			MaintenancePrice:    req.MaintenancePrice,
+			ProposalURL:           req.ProposalURL,
+			ProposalFileName:      req.ProposalFileName,
+			HasMaintenance:        req.HasMaintenance,
+			MaintenanceDuration:   req.MaintenanceDuration,
+			MaintenancePrice:      req.MaintenancePrice,
+			AllowComponentPayment: req.AllowComponentPayment,
 		},
 	)
 	if err != nil {
@@ -382,11 +385,56 @@ func (h *AdminHandler) ApproveQuotationBypass(c echo.Context) error {
 
 // GET /api/admin/orders
 func (h *AdminHandler) ListOrders(c echo.Context) error {
+	tab := c.QueryParam("tab")
+	status := c.QueryParam("status")
+
+	query := h.db.Preload("Payments").Order("created_at DESC")
+
+	if tab == "converted" || status == "converted" {
+		query = query.Where("status = 'converted' OR id IN (SELECT order_id FROM projects WHERE order_id IS NOT NULL AND deleted_at IS NULL)")
+	} else if tab == "all" || status == "all" {
+		// all orders
+	} else if status != "" {
+		query = query.Where("status = ?", status)
+	} else {
+		// Default: unconverted incoming orders
+		query = query.Where("status != 'converted' AND id NOT IN (SELECT order_id FROM projects WHERE order_id IS NOT NULL AND deleted_at IS NULL)")
+	}
+
 	var orders []model.Order
-	if err := h.db.Preload("Payments").Order("created_at DESC").Find(&orders).Error; err != nil {
+	if err := query.Find(&orders).Error; err != nil {
 		return response.Error(c, http.StatusInternalServerError, "Gagal mengambil daftar pesanan")
 	}
-	return response.Success(c, orders)
+
+	var projectLinks []struct {
+		ID      uint
+		OrderID uint
+	}
+	h.db.Model(&model.Project{}).Where("order_id IS NOT NULL AND deleted_at IS NULL").Select("id, order_id").Scan(&projectLinks)
+	orderProjectMap := make(map[uint]uint)
+	for _, pl := range projectLinks {
+		orderProjectMap[pl.OrderID] = pl.ID
+	}
+
+	type AdminOrderResponse struct {
+		model.Order
+		ProjectID   *uint `json:"project_id,omitempty"`
+		IsConverted bool  `json:"is_converted"`
+	}
+
+	result := make([]AdminOrderResponse, 0, len(orders))
+	for _, o := range orders {
+		resp := AdminOrderResponse{Order: o}
+		if pID, exists := orderProjectMap[o.ID]; exists {
+			resp.ProjectID = &pID
+			resp.IsConverted = true
+		} else if o.Status == "converted" {
+			resp.IsConverted = true
+		}
+		result = append(result, resp)
+	}
+
+	return response.Success(c, result)
 }
 
 // PUT /api/admin/orders/:id/status
@@ -481,8 +529,8 @@ func (h *AdminHandler) ConvertOrderToProject(c echo.Context) error {
 		h.projectSvc.RespondQuotation(q.ID, "accepted", "Disetujui dari form pesanan paket")
 	}
 
-	// Update order status to in_progress
-	h.db.Model(&model.Order{}).Where("id = ?", order.ID).Update("status", "in_progress")
+	// Update order status to converted
+	h.db.Model(&model.Order{}).Where("id = ?", order.ID).Update("status", "converted")
 
 	return response.SuccessWithMessage(c, project, "Pesanan berhasil dikonversi menjadi Proyek!")
 }

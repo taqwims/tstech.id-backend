@@ -19,12 +19,13 @@ type Project struct {
 	EstimatedEnd    *time.Time     `json:"estimated_end"`
 	ActualStart     *time.Time     `json:"actual_start"`
 	ActualEnd       *time.Time     `json:"actual_end"`
-	TotalAmount     int64          `json:"total_amount"`
-	PaidAmount      int64          `json:"paid_amount"`
-	Notes           string         `json:"notes" gorm:"type:text"`
-	CreatedAt       time.Time      `json:"created_at"`
-	UpdatedAt       time.Time      `json:"updated_at"`
-	DeletedAt       gorm.DeletedAt `json:"-" gorm:"index"`
+	TotalAmount           int64          `json:"total_amount"`
+	PaidAmount            int64          `json:"paid_amount"`
+	AllowComponentPayment bool           `json:"allow_component_payment" gorm:"default:false"`
+	Notes                 string         `json:"notes" gorm:"type:text"`
+	CreatedAt             time.Time      `json:"created_at"`
+	UpdatedAt             time.Time      `json:"updated_at"`
+	DeletedAt             gorm.DeletedAt `json:"-" gorm:"index"`
 
 	// Relations
 	Client     User        `json:"client" gorm:"foreignKey:ClientUserID"`

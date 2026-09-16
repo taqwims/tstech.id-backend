@@ -93,7 +93,7 @@ func main() {
 			auditSvc,
 			geminiBlogSvc,
 		),
-		Client:   handler.NewClientHandler(projectSvc, userRepo, storageSvc, paymentSvc),
+		Client:   handler.NewClientHandler(db, projectSvc, userRepo, storageSvc, paymentSvc),
 		Content:  handler.NewContentHandler(contentSvc),
 		Article:  handler.NewArticleHandler(articleSvc),
 		Category: handler.NewCategoryHandler(categoryRepo),

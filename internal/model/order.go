@@ -8,6 +8,7 @@ import (
 
 type Order struct {
 	ID              uint           `json:"id" gorm:"primarykey"`
+	UserID          *uint          `json:"user_id,omitempty" gorm:"index"`
 	OrderNumber     string         `json:"order_number" gorm:"uniqueIndex;not null"`
 	PackageType     string         `json:"package_type" gorm:"not null"` // basic / professional / enterprise
 	ServiceCategory string         `json:"service_category" gorm:"not null"`

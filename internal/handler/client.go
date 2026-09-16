@@ -11,9 +11,11 @@ import (
 	"github.com/tstech/backend/internal/repository"
 	"github.com/tstech/backend/internal/service"
 	"github.com/tstech/backend/pkg/response"
+	"gorm.io/gorm"
 )
 
 type ClientHandler struct {
+	db         *gorm.DB
 	projectSvc *service.ProjectService
 	userRepo   *repository.UserRepo
 	storageSvc *service.StorageService
@@ -21,12 +23,14 @@ type ClientHandler struct {
 }
 
 func NewClientHandler(
+	db *gorm.DB,
 	projectSvc *service.ProjectService,
 	userRepo *repository.UserRepo,
 	storageSvc *service.StorageService,
 	paymentSvc *service.PaymentService,
 ) *ClientHandler {
 	return &ClientHandler{
+		db:         db,
 		projectSvc: projectSvc,
 		userRepo:   userRepo,
 		storageSvc: storageSvc,
@@ -92,6 +96,54 @@ func (h *ClientHandler) ListProjects(c echo.Context) error {
 	}
 
 	return response.Paginated(c, projects, page, limit, total)
+}
+
+// GET /api/client/orders
+func (h *ClientHandler) ListOrders(c echo.Context) error {
+	userID, _ := c.Get("user_id").(uint)
+	user, err := h.userRepo.FindByID(userID)
+	if err != nil || user == nil {
+		return response.Error(c, http.StatusNotFound, "Pengguna tidak ditemukan")
+	}
+
+	var orders []model.Order
+	query := h.db.Preload("Payments").Where("LOWER(customer_email) = LOWER(?)", user.Email)
+	if user.ID > 0 {
+		query = h.db.Preload("Payments").Where("LOWER(customer_email) = LOWER(?) OR user_id = ?", user.Email, user.ID)
+	}
+	if err := query.Order("created_at DESC").Find(&orders).Error; err != nil {
+		return response.Error(c, http.StatusInternalServerError, "Gagal mengambil daftar pesanan")
+	}
+
+	var projectLinks []struct {
+		ID      uint
+		OrderID uint
+	}
+	h.db.Model(&model.Project{}).Where("order_id IS NOT NULL AND deleted_at IS NULL").Select("id, order_id").Scan(&projectLinks)
+	orderProjectMap := make(map[uint]uint)
+	for _, pl := range projectLinks {
+		orderProjectMap[pl.OrderID] = pl.ID
+	}
+
+	type ClientOrderResponse struct {
+		model.Order
+		ProjectID   *uint `json:"project_id,omitempty"`
+		IsConverted bool  `json:"is_converted"`
+	}
+
+	result := make([]ClientOrderResponse, 0, len(orders))
+	for _, o := range orders {
+		resp := ClientOrderResponse{Order: o}
+		if pID, exists := orderProjectMap[o.ID]; exists {
+			resp.ProjectID = &pID
+			resp.IsConverted = true
+		} else if o.Status == "converted" {
+			resp.IsConverted = true
+		}
+		result = append(result, resp)
+	}
+
+	return response.Success(c, result)
 }
 
 // GET /api/client/projects/:id
@@ -275,8 +327,40 @@ func (h *ClientHandler) CreateBalancePayment(c echo.Context) error {
 
 	var reqBody struct {
 		PaymentMethod string `json:"payment_method"`
+		Amount        int64  `json:"amount"`
+		Notes         string `json:"notes"`
+		PaymentType   string `json:"payment_type"`
+		ComponentDesc string `json:"component_desc"`
 	}
 	_ = c.Bind(&reqBody)
+
+	payAmount := remaining
+	if reqBody.Amount > 0 && reqBody.Amount <= remaining {
+		payAmount = reqBody.Amount
+	}
+
+	payType := "pelunasan"
+	if payAmount < remaining {
+		payType = "termin"
+	}
+	if reqBody.PaymentType != "" {
+		payType = reqBody.PaymentType
+	}
+
+	productName := fmt.Sprintf("Pelunasan Proyek: %s", project.Title)
+	notes := fmt.Sprintf("Pelunasan sisa tagihan proyek #%d", project.ID)
+	if payType == "termin" || reqBody.ComponentDesc != "" {
+		if reqBody.ComponentDesc != "" {
+			productName = fmt.Sprintf("Pembayaran Komponen: %s (%s)", reqBody.ComponentDesc, project.Title)
+			notes = fmt.Sprintf("Pembayaran komponen [%s] untuk proyek #%d", reqBody.ComponentDesc, project.ID)
+		} else {
+			productName = fmt.Sprintf("Pembayaran Termin: %s", project.Title)
+			notes = fmt.Sprintf("Pembayaran termin proyek #%d (Nominal: Rp %d)", project.ID, payAmount)
+		}
+	}
+	if reqBody.Notes != "" {
+		notes = reqBody.Notes
+	}
 
 	buyerName := "Klien TsTech"
 	buyerEmail := "client@tstech.id"
@@ -301,14 +385,14 @@ func (h *ClientHandler) CreateBalancePayment(c echo.Context) error {
 	result, err := h.paymentSvc.CreatePayment(&service.CreatePaymentRequest{
 		ProjectID:     &prjIDUint,
 		OrderID:       project.OrderID,
-		Amount:        remaining,
-		PaymentType:   "pelunasan",
+		Amount:        payAmount,
+		PaymentType:   payType,
 		PaymentMethod: reqBody.PaymentMethod,
 		BuyerName:     buyerName,
 		BuyerEmail:    buyerEmail,
 		BuyerPhone:    buyerPhone,
-		ProductName:   fmt.Sprintf("Pelunasan Proyek: %s", project.Title),
-		Notes:         fmt.Sprintf("Pelunasan sisa tagihan proyek #%d", project.ID),
+		ProductName:   productName,
+		Notes:         notes,
 	})
 	if err != nil {
 		return response.Error(c, http.StatusInternalServerError, "Gagal membuat sesi pembayaran: "+err.Error())

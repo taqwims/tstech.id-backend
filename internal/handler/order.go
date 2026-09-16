@@ -67,7 +67,35 @@ func (h *OrderHandler) Create(c echo.Context) error {
 		})
 	}
 
+	// Auto check & create client user account if not exists
+	var clientUserID *uint
+	isNewAccount := false
+	defaultPassword := "tstech123"
+	existingUser, err := h.userRepo.FindByEmail(req.CustomerEmail)
+	if err == nil && existingUser != nil {
+		clientUserID = &existingUser.ID
+	} else {
+		hashed, err := bcrypt.GenerateFromPassword([]byte(defaultPassword), bcrypt.DefaultCost)
+		if err == nil {
+			newUser := &model.User{
+				Email:       req.CustomerEmail,
+				Password:    string(hashed),
+				Name:        req.CustomerName,
+				Role:        "client",
+				Phone:       req.CustomerWA,
+				CompanyName: req.CompanyName,
+				IsActive:    true,
+			}
+			if err := h.userRepo.Create(newUser); err == nil {
+				isNewAccount = true
+				clientUserID = &newUser.ID
+				log.Printf("👤 Auto-created new client account for order: %s", req.CustomerEmail)
+			}
+		}
+	}
+
 	order := &model.Order{
+		UserID:          clientUserID,
 		PackageType:     req.PackageType,
 		ServiceCategory: req.ServiceCategory,
 		ProjectName:     req.ProjectName,
@@ -84,29 +112,6 @@ func (h *OrderHandler) Create(c echo.Context) error {
 
 	if err := h.orderSvc.CreateOrder(order); err != nil {
 		return response.Error(c, http.StatusInternalServerError, "Gagal membuat pesanan")
-	}
-
-	// Auto check & create client user account if not exists
-	isNewAccount := false
-	defaultPassword := "tstech123"
-	existingUser, err := h.userRepo.FindByEmail(req.CustomerEmail)
-	if err != nil || existingUser == nil {
-		hashed, err := bcrypt.GenerateFromPassword([]byte(defaultPassword), bcrypt.DefaultCost)
-		if err == nil {
-			newUser := &model.User{
-				Email:       req.CustomerEmail,
-				Password:    string(hashed),
-				Name:        req.CustomerName,
-				Role:        "client",
-				Phone:       req.CustomerWA,
-				CompanyName: req.CompanyName,
-				IsActive:    true,
-			}
-			if err := h.userRepo.Create(newUser); err == nil {
-				isNewAccount = true
-				log.Printf("👤 Auto-created new client account for order #%s: %s", order.OrderNumber, req.CustomerEmail)
-			}
-		}
 	}
 
 	// Send confirmation email with login info if new account

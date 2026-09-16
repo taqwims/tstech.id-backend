@@ -187,7 +187,7 @@ func seedDefaultContent(db *gorm.DB) {
 		},
 		{
 			Key:   "contact_address",
-			Value: "Menara Prima Lt. 18, Mega Kuningan, Jakarta Selatan",
+			Value: "Kubangpari RT.002 RW.005, Desa Ciherang, Kecamatan Banjarsari, Kabupaten Ciamis, Jawa Barat",
 			Type:  "text",
 			Group: "contact",
 		},
@@ -225,7 +225,7 @@ func seedDefaultContent(db *gorm.DB) {
 
 	for _, item := range defaults {
 		var existing model.SiteContent
-		if err := db.Where("`key` = ? OR \"key\" = ?", item.Key, item.Key).First(&existing).Error; err != nil {
+		if err := db.Where(&model.SiteContent{Key: item.Key}).First(&existing).Error; err != nil {
 			db.Create(&item)
 		}
 	}
@@ -342,6 +342,10 @@ func seedDefaultPaymentSettings(db *gorm.DB, cfg *config.Config) {
 	}
 
 	defaults := []model.PaymentSetting{
+		{Key: "pakasir_enabled", Value: "true"},
+		{Key: "pakasir_project_slug", Value: "tstech"},
+		{Key: "pakasir_api_key", Value: ""},
+		{Key: "pakasir_qris_only", Value: "false"},
 		{Key: "mayar_enabled", Value: "true"},
 		{Key: "mayar_api_key", Value: ""},
 		{Key: "mayar_is_production", Value: "false"},
@@ -359,11 +363,11 @@ func seedDefaultPaymentSettings(db *gorm.DB, cfg *config.Config) {
 
 	for _, s := range defaults {
 		var existing model.PaymentSetting
-		if err := db.Where("`key` = ? OR \"key\" = ?", s.Key, s.Key).First(&existing).Error; err != nil {
+		if err := db.Where(&model.PaymentSetting{Key: s.Key}).First(&existing).Error; err != nil {
 			db.Create(&s)
 		}
 	}
-	log.Println("💳 Seeded default payment settings (Mayar.id, iPaymu, Manual Transfer)")
+	log.Println("💳 Seeded default payment settings (Pakasir, Mayar.id, iPaymu, Manual Transfer)")
 }
 
 func seedArticles(db *gorm.DB) {
