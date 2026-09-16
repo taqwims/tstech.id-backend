@@ -2,6 +2,7 @@ package database
 
 import (
 	"log"
+	"strings"
 	"time"
 
 	"github.com/tstech/backend/internal/config"
@@ -1170,7 +1171,7 @@ func seedSaaSProducts(db *gorm.DB) {
 					PriceMonthly: 300000,
 					PriceYearly:  3000000,
 					DiscountPct:  15,
-					Features:     `["Maksimal 1.000 Siswa Aktif","Semua Fitur Starter","PPDB Online dengan Form Custom","Absensi RFID & Notifikasi WhatsApp Realtime","Prioritas Bantuan CS 24/7","Bisa pasang Custom Domain (lms.sekolahanda.sch.id)"]`,
+					Features:     `["Maksimal 1.000 Siswa Aktif","Semua Fitur Starter","PPDB Online dengan Form Custom","Absensi RFID & Cetak Kartu Siswa Digital","Prioritas Bantuan CS 24/7","Bisa pasang Custom Domain (lms.sekolahanda.sch.id)"]`,
 					MaxUsers:     1000,
 					MaxStorageGB: 50,
 					IsPopular:    true,
@@ -1347,14 +1348,23 @@ func syncDefaultPlanModules(db *gorm.DB) {
 	})
 	// Schola Pro
 	db.Model(&model.SaaSPlan{}).Where("code LIKE ? AND (feature_modules IS NULL OR feature_modules = '')", "%pro%").Updates(map[string]interface{}{
-		"feature_modules": `["billing","student_obligations","cash_ledger","infaq","savings","activities","public_website","wa_gateway","midtrans","ppdb","rfid_attendance","elearning","bk"]`,
+		"feature_modules": `["billing","student_obligations","cash_ledger","infaq","savings","activities","public_website","wa_gateway","midtrans","ppdb","rfid_attendance","student_cards","elearning","bk"]`,
 		"allowed_units":   `["sdit","mts","ma"]`,
 	})
 	// Schola Enterprise
 	db.Model(&model.SaaSPlan{}).Where("code LIKE ? AND (feature_modules IS NULL OR feature_modules = '')", "%enterprise%").Updates(map[string]interface{}{
-		"feature_modules": `["billing","student_obligations","cash_ledger","infaq","savings","activities","public_website","wa_gateway","midtrans","ppdb","rfid_attendance","elearning","bk","payroll","rkas","assets","external_debts"]`,
+		"feature_modules": `["billing","student_obligations","cash_ledger","infaq","savings","activities","public_website","wa_gateway","midtrans","ppdb","rfid_attendance","student_cards","elearning","bk","payroll","rkas","assets","external_debts"]`,
 		"allowed_units":   `["sdit","mts","ma","tk","umum"]`,
 	})
+
+	// Ensure existing plans with rfid_attendance also include student_cards if missing
+	var existingPlans []model.SaaSPlan
+	if err := db.Where("feature_modules LIKE ? AND feature_modules NOT LIKE ?", "%rfid_attendance%", "%student_cards%").Find(&existingPlans).Error; err == nil {
+		for _, pl := range existingPlans {
+			updated := strings.Replace(pl.FeatureModules, `"rfid_attendance"`, `"rfid_attendance","student_cards"`, 1)
+			db.Model(&model.SaaSPlan{}).Where("id = ?", pl.ID).Update("feature_modules", updated)
+		}
+	}
 }
 
 
