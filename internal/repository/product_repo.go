@@ -32,7 +32,7 @@ func (r *productRepo) Create(product *model.Product) error {
 	if err := r.db.Create(product).Error; err != nil {
 		return err
 	}
-	if product.IsSaaS {
+	if product.IsSaaS && product.IsActive {
 		r.syncSaaSProduct(product)
 	}
 	return nil
@@ -42,8 +42,11 @@ func (r *productRepo) Update(product *model.Product) error {
 	if err := r.db.Save(product).Error; err != nil {
 		return err
 	}
-	if product.IsSaaS {
+	if product.IsSaaS && product.IsActive {
 		r.syncSaaSProduct(product)
+	} else {
+		// If IsSaaS is false or IsActive is false, deactivate or delete SaaSProduct
+		r.db.Model(&model.SaaSProduct{}).Where("slug = ?", product.Slug).Update("is_active", false)
 	}
 	return nil
 }

@@ -284,6 +284,7 @@ func Setup(e *echo.Echo, h *Handlers) {
 	admin.GET("/saas/subscriptions", h.SaaS.AdminGetAllSubscriptions)
 	admin.POST("/saas/subscriptions", h.SaaS.AdminCreateSubscription)
 	admin.PUT("/saas/subscriptions/:id", h.SaaS.AdminUpdateSubscription)
+	admin.PUT("/saas/subscriptions/:id/cancel", h.SaaS.AdminCancelSubscription)
 	admin.DELETE("/saas/subscriptions/:id", h.SaaS.AdminDeleteSubscription)
 	admin.GET("/invoices", h.SaaS.AdminGetAllInvoices)
 	admin.POST("/invoices/:id/approve", h.SaaS.AdminApproveInvoice)

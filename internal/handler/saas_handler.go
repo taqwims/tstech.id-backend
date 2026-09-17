@@ -420,16 +420,30 @@ func (h *SaaSHandler) AdminCreateSubscription(c echo.Context) error {
 	return response.Created(c, sub, "Tenant SaaS berhasil didaftarkan")
 }
 
+// PUT /api/v1/admin/saas/subscriptions/:id/cancel
+func (h *SaaSHandler) AdminCancelSubscription(c echo.Context) error {
+	id, _ := strconv.Atoi(c.Param("id"))
+	if err := h.saasSvc.CancelSubscription(uint(id)); err != nil {
+		return response.Error(c, http.StatusBadRequest, err.Error())
+	}
+	return response.Success(c, map[string]string{"message": "Langganan SaaS berhasil dibatalkan"})
+}
+
 // DELETE /api/v1/admin/saas/subscriptions/:id
 func (h *SaaSHandler) AdminDeleteSubscription(c echo.Context) error {
 	id, _ := strconv.Atoi(c.Param("id"))
-	sub, err := h.saasRepo.GetSubscriptionByID(uint(id))
-	if err != nil {
-		return response.Error(c, http.StatusNotFound, "Langganan tidak ditemukan")
+	isPermanent := c.QueryParam("permanent") == "true"
+
+	if isPermanent {
+		if err := h.saasSvc.DeleteSubscription(uint(id)); err != nil {
+			return response.Error(c, http.StatusBadRequest, err.Error())
+		}
+		return response.Success(c, map[string]string{"message": "Langganan SaaS berhasil dihapus permanen"})
 	}
 
-	sub.Status = "cancelled"
-	_ = h.saasRepo.UpdateSubscription(sub)
+	if err := h.saasSvc.CancelSubscription(uint(id)); err != nil {
+		return response.Error(c, http.StatusBadRequest, err.Error())
+	}
 
 	return response.Success(c, map[string]string{"message": "Langganan tenant berhasil dibatalkan/dinonaktifkan"})
 }

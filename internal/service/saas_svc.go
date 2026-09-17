@@ -163,7 +163,7 @@ func (s *SaaSService) Subscribe(userID uint, req SubscribeRequest) (*model.SaaSS
 	}
 
 	plan, err := s.saasRepo.GetPlanByID(req.SaaSPlanID)
-	if err != nil || plan.SaaSProductID != prod.ID {
+	if err != nil || (plan.SaaSProductID != prod.ID && (plan.ProductID == nil || *plan.ProductID != prod.ID)) {
 		return nil, nil, errors.New("paket langganan tidak valid untuk produk ini")
 	}
 
@@ -172,11 +172,15 @@ func (s *SaaSService) Subscribe(userID uint, req SubscribeRequest) (*model.SaaSS
 		return nil, nil, err
 	}
 
-	// Calculate price
+	// Calculate price & duration based on billing cycle
 	var price float64
 	var periodDuration time.Duration
-	billingCycle := strings.ToLower(req.BillingCycle)
-	if billingCycle == "yearly" {
+	var cycleText string
+	billingCycle := strings.ToLower(strings.TrimSpace(req.BillingCycle))
+
+	switch billingCycle {
+	case "yearly", "12_months", "annual":
+		billingCycle = "yearly"
 		basePrice := plan.PriceYearly
 		if basePrice <= 0 {
 			basePrice = plan.PriceMonthly * 12
@@ -187,10 +191,39 @@ func (s *SaaSService) Subscribe(userID uint, req SubscribeRequest) (*model.SaaSS
 			price = basePrice
 		}
 		periodDuration = 365 * 24 * time.Hour
-	} else {
+		cycleText = "1 Tahun (12 Bulan)"
+
+	case "6_months", "semi_annual", "6-months":
+		billingCycle = "6_months"
+		basePrice := plan.PriceMonthly * 6
+		// Give half of yearly discount if discount available
+		disc := float64(plan.DiscountPct) * 0.5
+		if disc > 0 {
+			price = math.Round(basePrice * (1.0 - disc/100.0))
+		} else {
+			price = basePrice
+		}
+		periodDuration = 180 * 24 * time.Hour
+		cycleText = "6 Bulan"
+
+	case "3_months", "quarterly", "3-months":
+		billingCycle = "3_months"
+		basePrice := plan.PriceMonthly * 3
+		// Give 25% of yearly discount if available
+		disc := float64(plan.DiscountPct) * 0.25
+		if disc > 0 {
+			price = math.Round(basePrice * (1.0 - disc/100.0))
+		} else {
+			price = basePrice
+		}
+		periodDuration = 90 * 24 * time.Hour
+		cycleText = "3 Bulan"
+
+	default: // monthly
 		billingCycle = "monthly"
 		price = plan.PriceMonthly
 		periodDuration = 30 * 24 * time.Hour
+		cycleText = "1 Bulan"
 	}
 
 	now := time.Now()
@@ -218,15 +251,11 @@ func (s *SaaSService) Subscribe(userID uint, req SubscribeRequest) (*model.SaaSS
 
 	// Create Invoice
 	invNum := fmt.Sprintf("INV-%s-%04d", now.Format("20060102"), time.Now().Unix()%10000)
-	cycleText := "1 Bulan"
-	if billingCycle == "yearly" {
-		cycleText = "1 Tahun"
-	}
 	invTitle := fmt.Sprintf("Langganan %s - %s (%s)", prod.Name, sub.TenantName, cycleText)
 
-	paymentMethod := strings.ToLower(req.PaymentMethod)
-	if paymentMethod != "mayar" && paymentMethod != "manual_transfer" {
-		paymentMethod = "mayar"
+	paymentMethod := strings.ToLower(strings.TrimSpace(req.PaymentMethod))
+	if paymentMethod == "" {
+		paymentMethod = "pakasir"
 	}
 
 	inv := &model.Invoice{
@@ -234,7 +263,7 @@ func (s *SaaSService) Subscribe(userID uint, req SubscribeRequest) (*model.SaaSS
 		UserID:         userID,
 		SubscriptionID: &sub.ID,
 		Title:          invTitle,
-		Description:    fmt.Sprintf("Paket: %s | Subdomain: https://%s", plan.Name, sub.FullSubdomain),
+		Description:    fmt.Sprintf("Paket: %s (%s) | Subdomain: https://%s", plan.Name, cycleText, sub.FullSubdomain),
 		Amount:         price,
 		TotalAmount:    price,
 		Status:         "unpaid",
@@ -242,8 +271,9 @@ func (s *SaaSService) Subscribe(userID uint, req SubscribeRequest) (*model.SaaSS
 		DueDate:        now.Add(24 * time.Hour),
 	}
 
-	// If Mayar selected, try to create Mayar payment session
-	if paymentMethod == "mayar" && s.paymentSvc != nil {
+	// Dynamic Payment Gateway Processing
+	if s.paymentSvc != nil {
+		settings, _ := s.paymentSvc.GetAdminSettings()
 		user, _ := s.userRepo.FindByID(userID)
 		userName := "Pelanggan TsTech"
 		userEmail := "client@tstech.id"
@@ -263,15 +293,36 @@ func (s *SaaSService) Subscribe(userID uint, req SubscribeRequest) (*model.SaaSS
 		payReq := &CreatePaymentRequest{
 			Amount:        int64(price),
 			PaymentType:   "subscription",
-			PaymentMethod: "mayar",
+			PaymentMethod: paymentMethod,
 			BuyerName:     userName,
 			BuyerEmail:    userEmail,
 			BuyerPhone:    userPhone,
 			ProductName:   invTitle,
 		}
 
-		settings, err := s.paymentSvc.GetAdminSettings()
-		if err == nil && settings != nil && settings.MayarEnabled {
+		if (paymentMethod == "pakasir" || paymentMethod == "gateway") && settings != nil && settings.PakasirEnabled {
+			inv.PaymentMethod = "pakasir"
+			checkoutURL, transID, err := s.paymentSvc.callPakasirAPI(0, payReq, settings)
+			if err == nil {
+				// Pakasir checkout URL formatting with invoice ref
+				slug := settings.PakasirProjectSlug
+				if slug == "" {
+					slug = s.cfg.PakasirProjectSlug
+				}
+				if slug == "" {
+					slug = "tstech"
+				}
+				redirectURL := fmt.Sprintf("%s/dashboard/invoices", s.cfg.AppURL)
+				checkoutURL = fmt.Sprintf("https://app.pakasir.com/pay/%s/%d?order_id=%s&redirect=%s",
+					slug, int64(price), invNum, redirectURL)
+				if settings.PakasirQRISOnly || s.cfg.PakasirQRISOnly {
+					checkoutURL += "&qris_only=1"
+				}
+				inv.PaymentURL = checkoutURL
+				inv.GatewayTransID = transID
+			}
+		} else if paymentMethod == "mayar" && settings != nil && settings.MayarEnabled {
+			inv.PaymentMethod = "mayar"
 			paymentURL, transID, qrURL, err := s.paymentSvc.callMayarAPI(0, payReq, settings)
 			if err == nil {
 				inv.PaymentURL = paymentURL
@@ -495,6 +546,54 @@ func (s *SaaSService) SubmitManualPaymentProof(userID uint, invID uint, proofURL
 	return inv, nil
 }
 
+// CancelSubscription cancels a subscription and any pending unpaid invoices
+func (s *SaaSService) CancelSubscription(subID uint) error {
+	sub, err := s.saasRepo.GetSubscriptionByID(subID)
+	if err != nil {
+		return errors.New("langganan tidak ditemukan")
+	}
+
+	sub.Status = "cancelled"
+	if err := s.saasRepo.UpdateSubscription(sub); err != nil {
+		return err
+	}
+
+	// Cancel any pending/unpaid invoices associated with this subscription
+	s.db.Model(&model.Invoice{}).
+		Where("subscription_id = ? AND status IN ?", sub.ID, []string{"unpaid", "waiting_confirmation", "pending"}).
+		Update("status", "cancelled")
+
+	return nil
+}
+
+// DeleteSubscription permanently removes a subscription record and cancels pending invoices
+func (s *SaaSService) DeleteSubscription(subID uint) error {
+	sub, err := s.saasRepo.GetSubscriptionByID(subID)
+	if err != nil {
+		return errors.New("langganan tidak ditemukan")
+	}
+
+	// Cancel any pending/unpaid invoices associated with this subscription
+	s.db.Model(&model.Invoice{}).
+		Where("subscription_id = ? AND status IN ?", sub.ID, []string{"unpaid", "waiting_confirmation", "pending"}).
+		Update("status", "cancelled")
+
+	return s.saasRepo.DeleteSubscription(subID)
+}
+
+func getCycleDuration(cycle string) time.Duration {
+	switch strings.ToLower(strings.TrimSpace(cycle)) {
+	case "yearly", "12_months", "annual":
+		return 365 * 24 * time.Hour
+	case "6_months", "semi_annual", "6-months":
+		return 180 * 24 * time.Hour
+	case "3_months", "quarterly", "3-months":
+		return 90 * 24 * time.Hour
+	default:
+		return 30 * 24 * time.Hour
+	}
+}
+
 // ApproveManualInvoice marks invoice as paid and activates the subscription
 func (s *SaaSService) ApproveManualInvoice(invID uint) (*model.Invoice, error) {
 	inv, err := s.saasRepo.GetInvoiceByID(invID)
@@ -521,11 +620,7 @@ func (s *SaaSService) ApproveManualInvoice(invID uint) (*model.Invoice, error) {
 				baseTime = sub.EndDate
 			}
 
-			if sub.BillingCycle == "yearly" {
-				sub.EndDate = baseTime.Add(365 * 24 * time.Hour)
-			} else {
-				sub.EndDate = baseTime.Add(30 * 24 * time.Hour)
-			}
+			sub.EndDate = baseTime.Add(getCycleDuration(sub.BillingCycle))
 			sub.StartDate = now
 			s.saasRepo.UpdateSubscription(sub)
 		}
@@ -559,11 +654,7 @@ func (s *SaaSService) HandleMayarWebhook(event, status, transactionID, invoiceNu
 				if sub.EndDate.After(now) {
 					baseTime = sub.EndDate
 				}
-				if sub.BillingCycle == "yearly" {
-					sub.EndDate = baseTime.Add(365 * 24 * time.Hour)
-				} else {
-					sub.EndDate = baseTime.Add(30 * 24 * time.Hour)
-				}
+				sub.EndDate = baseTime.Add(getCycleDuration(sub.BillingCycle))
 				s.saasRepo.UpdateSubscription(sub)
 			}
 		}

@@ -32,6 +32,7 @@ type SaaSRepository interface {
 	GetUserSubscriptions(userID uint) ([]model.SaaSSubscription, error)
 	GetAllSubscriptions(status, search string, page, limit int) ([]model.SaaSSubscription, int64, error)
 	UpdateSubscription(sub *model.SaaSSubscription) error
+	DeleteSubscription(id uint) error
 
 	// Invoices
 	CreateInvoice(inv *model.Invoice) error
@@ -285,6 +286,11 @@ func (r *saasRepository) GetAllSubscriptions(status, search string, page, limit 
 
 func (r *saasRepository) UpdateSubscription(sub *model.SaaSSubscription) error {
 	return r.db.Save(sub).Error
+}
+
+func (r *saasRepository) DeleteSubscription(id uint) error {
+	// Delete subscription record (soft-delete via gorm or hard delete if deletedAt)
+	return r.db.Delete(&model.SaaSSubscription{}, id).Error
 }
 
 func (r *saasRepository) CreateInvoice(inv *model.Invoice) error {

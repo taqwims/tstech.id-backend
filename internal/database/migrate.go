@@ -1108,15 +1108,50 @@ func seedProducts(db *gorm.DB) {
 		}
 	}
 
-	// Link SaaS plans to products by slug matching
+	// Sync SaaS products & plans strictly based on unified products table
 	var allProducts []model.Product
 	db.Find(&allProducts)
 	for _, prod := range allProducts {
-		if prod.IsSaaS {
+		if prod.IsSaaS && prod.IsActive {
 			var saasProd model.SaaSProduct
 			if err := db.Where("slug = ?", prod.Slug).First(&saasProd).Error; err == nil {
+				saasProd.IsActive = true
+				saasProd.IsFeatured = prod.IsFeatured
+				saasProd.Name = prod.Title
+				saasProd.Tagline = prod.Tagline
+				saasProd.Category = prod.Category
+				saasProd.Icon = prod.Icon
+				saasProd.BaseDomain = prod.BaseDomain
+				saasProd.SubdomainPattern = prod.SubdomainPattern
+				db.Save(&saasProd)
 				db.Model(&model.SaaSPlan{}).Where("saa_s_product_id = ?", saasProd.ID).Update("product_id", prod.ID)
+			} else {
+				newSaas := model.SaaSProduct{
+					Slug:             prod.Slug,
+					Name:             prod.Title,
+					Tagline:          prod.Tagline,
+					Icon:             prod.Icon,
+					Category:         prod.Category,
+					SubdomainPattern: prod.SubdomainPattern,
+					BaseDomain:       prod.BaseDomain,
+					DemoURL:          prod.DemoURL,
+					DocURL:           prod.DocURL,
+					Thumbnail:        prod.Thumbnail,
+					Images:           prod.Images,
+					Features:         prod.Features,
+					TechStack:        prod.TechStack,
+					Overview:         prod.Overview,
+					WebhookURL:       prod.WebhookURL,
+					APISecretKey:     prod.APISecretKey,
+					IsActive:         true,
+					IsFeatured:       prod.IsFeatured,
+					SortOrder:        prod.SortOrder,
+				}
+				db.Create(&newSaas)
 			}
+		} else {
+			// If not a SaaS product or not active, deactivate in saas_products
+			db.Model(&model.SaaSProduct{}).Where("slug = ?", prod.Slug).Update("is_active", false)
 		}
 	}
 

@@ -1109,6 +1109,46 @@ func (s *PaymentService) HandlePakasirNotification(data map[string]interface{}) 
 		return errors.New("missing order_id in Pakasir payload")
 	}
 
+	// Check if this order is a SaaS Invoice
+	var saasInv model.Invoice
+	if err := s.db.Where("invoice_number = ? OR gateway_trans_id = ?", orderID, orderID).First(&saasInv).Error; err == nil {
+		if status == "paid" || status == "success" || status == "settlement" || status == "completed" {
+			now := time.Now()
+			saasInv.Status = "paid"
+			saasInv.PaidAt = &now
+			saasInv.PaymentMethod = "pakasir"
+			s.db.Save(&saasInv)
+
+			if saasInv.SubscriptionID != nil {
+				var sub model.SaaSSubscription
+				if err := s.db.First(&sub, *saasInv.SubscriptionID).Error; err == nil {
+					sub.Status = "active"
+					baseTime := now
+					if sub.EndDate.After(now) {
+						baseTime = sub.EndDate
+					}
+					var dur time.Duration = 30 * 24 * time.Hour
+					switch strings.ToLower(strings.TrimSpace(sub.BillingCycle)) {
+					case "yearly", "12_months", "annual":
+						dur = 365 * 24 * time.Hour
+					case "6_months", "semi_annual", "6-months":
+						dur = 180 * 24 * time.Hour
+					case "3_months", "quarterly", "3-months":
+						dur = 90 * 24 * time.Hour
+					}
+					sub.EndDate = baseTime.Add(dur)
+					sub.StartDate = now
+					s.db.Save(&sub)
+				}
+			}
+			log.Printf("✅ SaaS Invoice %s marked as PAID via Pakasir webhook", saasInv.InvoiceNumber)
+			return nil
+		} else if status == "cancelled" || status == "cancel" {
+			saasInv.Status = "cancelled"
+			return s.db.Save(&saasInv).Error
+		}
+	}
+
 	var payment model.Payment
 	err := s.db.Where("gateway_trans_id = ? OR invoice_number = ?", orderID, orderID).First(&payment).Error
 	if err != nil {
