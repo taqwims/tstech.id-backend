@@ -953,3 +953,32 @@ func (h *AdminHandler) GenerateAIBlogNow(c echo.Context) error {
 	return response.SuccessWithMessage(c, article, "Artikel berhasil digenerate oleh AI Gemini")
 }
 
+// GET /api/admin/projects/:id/bast
+func (h *AdminHandler) GetBast(c echo.Context) error {
+	id, _ := strconv.Atoi(c.Param("id"))
+	bast, err := h.projectSvc.GetBastByProject(uint(id))
+	if err != nil {
+		return response.Error(c, http.StatusNotFound, "Data BAST proyek tidak ditemukan: "+err.Error())
+	}
+	return response.Success(c, bast)
+}
+
+// POST /api/admin/projects/:id/bast
+func (h *AdminHandler) SaveBast(c echo.Context) error {
+	id, _ := strconv.Atoi(c.Param("id"))
+	var bast model.Bast
+	if err := c.Bind(&bast); err != nil {
+		return response.Error(c, http.StatusBadRequest, "Format data BAST tidak valid")
+	}
+
+	saved, err := h.projectSvc.SaveBast(uint(id), &bast)
+	if err != nil {
+		return response.Error(c, http.StatusInternalServerError, "Gagal menyimpan BAST: "+err.Error())
+	}
+
+	h.auditSvc.Log(c, "BAST_SAVE", "bast", fmt.Sprintf("%d", saved.ID), fmt.Sprintf("Admin menyimpan data BAST #%s untuk proyek #%d", saved.BastNumber, id), saved)
+
+	return response.SuccessWithMessage(c, saved, "Data BAST berhasil disimpan ke database")
+}
+
+

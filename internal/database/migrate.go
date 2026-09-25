@@ -37,6 +37,7 @@ func Migrate(db *gorm.DB, cfg *config.Config) {
 		&model.Invoice{},
 		&model.AuditLog{},
 		&model.AIBlogSetting{},
+		&model.Bast{},
 	)
 	if err != nil {
 		log.Fatalf("Failed to run migrations: %v", err)

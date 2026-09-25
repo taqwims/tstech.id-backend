@@ -400,3 +400,44 @@ func (h *ClientHandler) CreateBalancePayment(c echo.Context) error {
 
 	return response.Success(c, result)
 }
+
+// GET /api/client/projects/:id/bast
+func (h *ClientHandler) GetBast(c echo.Context) error {
+	id, _ := strconv.Atoi(c.Param("id"))
+	userID, _ := c.Get("user_id").(uint)
+
+	project, err := h.projectSvc.GetProjectDetail(uint(id))
+	if err != nil || project.ClientUserID != userID {
+		return response.Error(c, http.StatusNotFound, "Proyek tidak ditemukan")
+	}
+
+	bast, err := h.projectSvc.GetBastByProject(uint(id))
+	if err != nil {
+		return response.Error(c, http.StatusNotFound, "Data BAST proyek tidak ditemukan: "+err.Error())
+	}
+	return response.Success(c, bast)
+}
+
+// POST /api/client/projects/:id/bast
+func (h *ClientHandler) SaveBast(c echo.Context) error {
+	id, _ := strconv.Atoi(c.Param("id"))
+	userID, _ := c.Get("user_id").(uint)
+
+	project, err := h.projectSvc.GetProjectDetail(uint(id))
+	if err != nil || project.ClientUserID != userID {
+		return response.Error(c, http.StatusNotFound, "Proyek tidak ditemukan")
+	}
+
+	var bast model.Bast
+	if err := c.Bind(&bast); err != nil {
+		return response.Error(c, http.StatusBadRequest, "Format data BAST tidak valid")
+	}
+
+	saved, err := h.projectSvc.SaveBast(uint(id), &bast)
+	if err != nil {
+		return response.Error(c, http.StatusInternalServerError, "Gagal menyimpan BAST: "+err.Error())
+	}
+
+	return response.SuccessWithMessage(c, saved, "Data BAST berhasil disimpan ke sistem")
+}
+

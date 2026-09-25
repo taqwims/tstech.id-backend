@@ -19,6 +19,7 @@ type ProjectService struct {
 	fileRepo      *repository.FileRepo
 	quotationRepo *repository.QuotationRepo
 	orderRepo     *repository.OrderRepo
+	bastRepo      *repository.BastRepo
 }
 
 func NewProjectService(
@@ -29,6 +30,7 @@ func NewProjectService(
 	fRepo *repository.FileRepo,
 	qRepo *repository.QuotationRepo,
 	oRepo *repository.OrderRepo,
+	bRepo *repository.BastRepo,
 ) *ProjectService {
 	return &ProjectService{
 		db:            db,
@@ -38,6 +40,7 @@ func NewProjectService(
 		fileRepo:      fRepo,
 		quotationRepo: qRepo,
 		orderRepo:     oRepo,
+		bastRepo:      bRepo,
 	}
 }
 
@@ -370,4 +373,94 @@ func (s *ProjectService) RecordPayment(projectID uint, amount int64, paymentType
 	}
 
 	return payment, nil
+}
+
+// BAST (Berita Acara Serah Terima) Management
+func (s *ProjectService) SaveBast(projectID uint, bast *model.Bast) (*model.Bast, error) {
+	if bast == nil {
+		return nil, errors.New("data BAST tidak boleh kosong")
+	}
+	bast.ProjectID = projectID
+
+	if bast.BastNumber == "" {
+		now := time.Now()
+		bast.BastNumber = fmt.Sprintf("BAST/%d%02d/%04d", now.Year(), int(now.Month()), projectID)
+	}
+
+	if err := s.bastRepo.Save(bast); err != nil {
+		return nil, err
+	}
+
+	return s.bastRepo.FindByProjectID(projectID)
+}
+
+func (s *ProjectService) GetBastByProject(projectID uint) (*model.Bast, error) {
+	bast, err := s.bastRepo.FindByProjectID(projectID)
+	if err != nil {
+		// Return synthesized default BAST if not yet saved in DB
+		project, errProj := s.projectRepo.FindByID(projectID)
+		if errProj != nil {
+			return nil, errProj
+		}
+		now := time.Now()
+		daysOfWeek := []string{"Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"}
+		dayName := daysOfWeek[now.Weekday()]
+
+		clientName := "Klien Terhormat"
+		companyName := "Klien"
+		clientAddress := "Alamat Klien"
+		if project.Client.ID > 0 {
+			clientName = project.Client.Name
+			if project.Client.CompanyName != "" {
+				companyName = project.Client.CompanyName
+			}
+			if project.Client.Email != "" {
+				clientAddress = fmt.Sprintf("Email: %s", project.Client.Email)
+				if project.Client.Phone != "" {
+					clientAddress += fmt.Sprintf(" • Telp: %s", project.Client.Phone)
+				}
+			}
+		}
+
+		q, _ := s.quotationRepo.FindByProjectID(projectID)
+		contractRef := fmt.Sprintf("Surat Perintah Kerja (SPK) Proyek #%d", projectID)
+		warrantyPeriod := "30 Hari Kalender (Garansi Bug & Error)"
+		deliverablesJSON := ""
+
+		if q != nil {
+			contractRef = fmt.Sprintf("Surat Penawaran Harga No. QUO/%d", projectID)
+			if q.HasMaintenance {
+				warrantyPeriod = fmt.Sprintf("%s (Maintenance & Dukungan Teknis Penuh)", q.MaintenanceDuration)
+			}
+			if q.Items != "" {
+				deliverablesJSON = q.Items
+			}
+		}
+
+		defaultBast := &model.Bast{
+			ProjectID:        projectID,
+			BastNumber:       fmt.Sprintf("BAST/%d%02d/%04d", now.Year(), int(now.Month()), projectID),
+			HandoverDate:     now,
+			HandoverDay:      dayName,
+			HandoverLocation: "Ciamis / Daring (Online)",
+			Party1Name:       "Taqwim Syuhada, S.Kom.",
+			Party1Title:      "Direktur / Lead Project Manager",
+			Party1Company:    "PT TSTECH SOLUSI TEKNOLOGI",
+			Party1Address:    "Kubangpari RT.002 RW.005, Desa Ciherang, Kec. Banjarsari, Kab. Ciamis, Jawa Barat",
+			Party2Name:       clientName,
+			Party2Title:      "Penanggung Jawab / PIC Proyek",
+			Party2Company:    companyName,
+			Party2Address:    clientAddress,
+			ProjectTitle:     project.Title,
+			ContractRef:      contractRef,
+			WarrantyPeriod:   warrantyPeriod,
+			AdditionalNotes:  "Dengan ditandatanganinya Berita Acara ini, maka hak cipta operasional serta pemanfaatan sistem sepenuhnya menjadi milik PIHAK KEDUA, dan kewajiban pengerjaan oleh PIHAK KESATU dinyatakan telah selesai dengan baik.",
+			Deliverables:     deliverablesJSON,
+			Status:           "signed",
+			CreatedAt:        now,
+			UpdatedAt:        now,
+		}
+		return defaultBast, nil
+	}
+	return bast, nil
 }

@@ -42,6 +42,7 @@ func main() {
 	productRepo := repository.NewProductRepo(db)
 	saasRepo := repository.NewSaaSRepository(db)
 	auditRepo := repository.NewAuditRepo(db)
+	bastRepo := repository.NewBastRepo(db)
 
 	// Initialize services
 	emailSvc := service.NewEmailService(cfg)
@@ -65,6 +66,7 @@ func main() {
 		fileRepo,
 		quotationRepo,
 		orderRepo,
+		bastRepo,
 	)
 
 	// Start background AI blog scheduler worker

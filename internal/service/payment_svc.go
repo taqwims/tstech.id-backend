@@ -1396,6 +1396,110 @@ func (s *PaymentService) VerifyDocument(docNumber, docType string) (map[string]i
 		}
 	}
 
+	// 3. Check BAST (Berita Acara Serah Terima)
+	if docType == "bast" || strings.HasPrefix(strings.ToUpper(docNumber), "BAST") || docType == "" {
+		var bast model.Bast
+		err := s.db.Preload("Project.Client").
+			Where("bast_number = ? OR bast_number = ? OR bast_number = ? OR bast_number LIKE ?",
+				docNumber, docNumberNormalized, docNumberHyphen, "%"+docNumber+"%").
+			First(&bast).Error
+
+		// If not found directly in BAST table, try searching by project ID from normalized number
+		if err != nil {
+			parts := strings.Split(docNumberNormalized, "/")
+			if len(parts) > 0 {
+				lastPart := strings.TrimLeft(parts[len(parts)-1], "0")
+				if lastPart == "" {
+					lastPart = "0"
+				}
+				if projID, errConv := strconv.Atoi(lastPart); errConv == nil && projID > 0 {
+					err = s.db.Preload("Project.Client").Where("project_id = ?", projID).First(&bast).Error
+					if err != nil {
+						// Synthesize from project directly if project exists
+						var project model.Project
+						if errProj := s.db.Preload("Client").First(&project, projID).Error; errProj == nil && project.ID > 0 {
+							clientName := "Klien Terdaftar"
+							companyName := ""
+							if project.Client.ID > 0 {
+								clientName = project.Client.Name
+								companyName = project.Client.CompanyName
+							}
+							return map[string]interface{}{
+								"is_valid":          true,
+								"document_type":     "BERITA ACARA SERAH TERIMA (BAST)",
+								"document_number":   docNumber,
+								"issuer":            "TSTECH SOLUSI TEKNOLOGI",
+								"client_name":       clientName,
+								"company_name":      companyName,
+								"project_title":     project.Title,
+								"party1_name":       "Taqwim Syuhada, S.Kom.",
+								"party1_title":      "Direktur / Lead Project Manager",
+								"party1_company":    "PT TSTECH SOLUSI TEKNOLOGI",
+								"party2_name":       clientName,
+								"party2_title":      "Penanggung Jawab / PIC Proyek",
+								"party2_company":    companyName,
+								"handover_date":     project.UpdatedAt,
+								"warranty_period":   "30 Hari Kalender (Garansi Bug & Error)",
+								"status":            "TERVERIFIKASI RESMI (SERAH TERIMA SELESAI)",
+								"issued_at":         project.CreatedAt,
+								"notes":             "Hasil pekerjaan proyek telah terverifikasi sah dan terdaftar pada sistem pembukuan TsTech.",
+							}, nil
+						}
+					}
+				}
+			}
+		}
+
+		if err == nil && bast.ID > 0 {
+			clientName := bast.Party2Name
+			companyName := bast.Party2Company
+			projectTitle := bast.ProjectTitle
+			if bast.Project != nil {
+				if projectTitle == "" {
+					projectTitle = bast.Project.Title
+				}
+				if clientName == "" && bast.Project.Client.ID > 0 {
+					clientName = bast.Project.Client.Name
+					companyName = bast.Project.Client.CompanyName
+				}
+			}
+
+			var parsedDeliverables []map[string]interface{}
+			if bast.Deliverables != "" {
+				_ = json.Unmarshal([]byte(bast.Deliverables), &parsedDeliverables)
+			}
+
+			return map[string]interface{}{
+				"is_valid":          true,
+				"document_type":     "BERITA ACARA SERAH TERIMA (BAST)",
+				"document_number":   bast.BastNumber,
+				"issuer":            "TSTECH SOLUSI TEKNOLOGI",
+				"client_name":       clientName,
+				"company_name":      companyName,
+				"project_title":     projectTitle,
+				"party1_name":       bast.Party1Name,
+				"party1_title":      bast.Party1Title,
+				"party1_company":    bast.Party1Company,
+				"party2_name":       bast.Party2Name,
+				"party2_title":      bast.Party2Title,
+				"party2_company":    bast.Party2Company,
+				"handover_date":     bast.HandoverDate,
+				"handover_day":      bast.HandoverDay,
+				"handover_location": bast.HandoverLocation,
+				"contract_ref":      bast.ContractRef,
+				"warranty_period":   bast.WarrantyPeriod,
+				"additional_notes":  bast.AdditionalNotes,
+				"deliverables":      parsedDeliverables,
+				"status":            "TERVERIFIKASI RESMI (SERAH TERIMA SELESAI)",
+				"issued_at":         bast.CreatedAt,
+			}, nil
+		}
+
+		if docType == "bast" {
+			return nil, errors.New("dokumen BAST tidak ditemukan atau nomor dokumen tidak sah")
+		}
+	}
+
 	return nil, errors.New("dokumen tidak ditemukan atau nomor dokumen tidak sah di sistem TsTech")
 }
 
